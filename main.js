@@ -16,7 +16,7 @@ export default {
         if (update.message) {
           const chatId = update.message.chat.id;
           const text = update.message.text || "";
-          const firstName = update.message.chat.first_name || "کاربر";
+          const firstName = update.message.from?.first_name || "کاربر";
 
           let reply = "";
 

@@ -1,28 +1,27 @@
 export default {
   async fetch(request, env) {
-    const url = new URL(request.url);
-
-    // تست ساده برای GET
-    if (request.method === "GET") {
-      return new Response("Bot is running! ✅");
+    // فقط اجازه POST از تلگرام
+    if (request.method !== "POST") {
+      return new Response("Method Not Allowed", { status: 405 });
     }
 
-    // دریافت پیام‌های تلگرام از طریق Webhook (POST)
-    if (request.method === "POST") {
-      try {
-        const update = await request.json();
+    try {
+      const update = await request.json();
+      
+      // بررسی وجود پیام
+      if (!update.message) {
+        return new Response("OK", { status: 200 });
+      }
 
-        // بررسی وجود پیام
-        if (update.message) {
-          const chatId = update.message.chat.id;
-          const text = update.message.text || "";
-          const firstName = update.message.from?.first_name || "کاربر";
+      const chatId = update.message.chat.id;
+      const text = update.message.text || "";
+      const firstName = update.message.from?.first_name || "کاربر";
 
-          let reply = "";
+      let reply = "";
 
-          // مدیریت دستورات
-          if (text === "/start") {
-            reply = `سلام ${firstName} 👋✨
+      // مدیریت دستورات
+      if (text === "/start") {
+        reply = `سلام ${firstName} 👋✨
 
 به ربات رسمی فروشگاه شما خوش آمدید 🛒
 
@@ -34,62 +33,77 @@ export default {
 ما تلاش می‌کنیم خرید شما سریع‌تر، راحت‌تر و مطمئن‌تر انجام بشه 💚
 
 برای شروع یکی از گزینه‌ها رو انتخاب کنید 👇`;
-            
-          } else if (text === "/help") {
-            reply = `📋 راهنما:\n/start - شروع مجدد\n/help - نمایش این راهنما\n/shop - مشاهده محصولات\n/contact - ارتباط با پشتیبانی`;
-          } else if (text === "/shop") {
-            reply = `🛍 محصولات موجود:\n۱. محصول اول - ۱۰۰ تومان\n۲. محصول دوم - ۲۰۰ تومان\n۳. محصول سوم - ۱۵۰ تومان\nبرای خرید عدد محصول را وارد کنید.`;
-          } else if (text === "/contact") {
-            reply = `📞 برای ارتباط با پشتیبانی:\nایمیل: support@example.com\nتلفن: ۰۹۱۲۳۴۵۶۷۸۹`;
-          } else if (text.startsWith("/")) {
-            reply = `❌ دستور ناشناخته. برای مشاهده راهنما /help را وارد کنید.`;
-          } else {
-            // پاسخ به پیام‌های معمولی
-            reply = `📩 شما گفتید: "${text}"\n\nبرای دریافت راهنما /help را وارد کنید.`;
-          }
+        
+      } else if (text === "/help") {
+        reply = `📋 راهنما:
+/start - شروع مجدد
+/help - نمایش این راهنما
+/shop - مشاهده محصولات
+/contact - ارتباط با پشتیبانی`;
+        
+      } else if (text === "/shop") {
+        reply = `🛍 محصولات موجود:
+1️⃣ محصول اول - ۱۰۰ تومان
+2️⃣ محصول دوم - ۲۰۰ تومان
+3️⃣ محصول سوم - ۱۵۰ تومان
 
-          // ارسال پاسخ به تلگرام
-          const telegramApiUrl = `https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`;
-          
-          const response = await fetch(telegramApiUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: reply,
-              parse_mode: "HTML", // پشتیبانی از HTML ساده
-            }),
-          });
+برای خرید عدد محصول را وارد کنید.`;
+        
+      } else if (text === "/contact") {
+        reply = `📞 برای ارتباط با پشتیبانی:
+ایمیل: support@example.com
+تلفن: ۰۹۱۲۳۴۵۶۷۸۹`;
+        
+      } else if (text.startsWith("/")) {
+        reply = `❌ دستور ناشناخته. برای مشاهده راهنما /help را وارد کنید.`;
+        
+      } else {
+        // پاسخ به پیام‌های معمولی
+        reply = `📩 شما گفتید: "${text}"
 
-          // بررسی وضعیت ارسال
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Telegram API Error:", errorText);
-            return new Response(`Error: ${errorText}`, { status: 500 });
-          }
-
-          // ذخیره در KV (اختیاری - در صورت نیاز)
-          if (env.MY_KV) {
-            try {
-              await env.MY_KV.put(`user_${chatId}_last_msg`, text, {
-                expirationTtl: 86400 // 24 ساعت
-              });
-            } catch (kvError) {
-              console.error("KV Error:", kvError);
-              // خطای KV مشکلی در پاسخ ایجاد نمی‌کند
-            }
-          }
-        }
-
-        return new Response("OK", { status: 200 });
-      } catch (error) {
-        console.error("Error processing request:", error);
-        return new Response(`Error: ${error.message}`, { status: 500 });
+برای دریافت راهنما /help را وارد کنید.`;
       }
-    }
 
-    return new Response("Method Not Allowed", { status: 405 });
+      // ارسال پاسخ به تلگرام با timeout بیشتر
+      const telegramApiUrl = `https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`;
+      
+      const response = await fetch(telegramApiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: reply,
+          parse_mode: "Markdown", // استفاده از Markdown به جای HTML
+          disable_web_page_preview: true,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Telegram API Error:", errorText);
+        // هنوز به تلگرام OK برگردونیم تا دوباره ارسال نکنه
+        return new Response("OK", { status: 200 });
+      }
+
+      // ذخیره در KV (اختیاری)
+      if (env.MY_KV) {
+        try {
+          await env.MY_KV.put(`user_${chatId}_last_msg`, text, {
+            expirationTtl: 86400
+          });
+        } catch (kvError) {
+          console.error("KV Error:", kvError);
+        }
+      }
+
+      return new Response("OK", { status: 200 });
+      
+    } catch (error) {
+      console.error("Error processing request:", error);
+      // همیشه OK برگردون تا تلگرام دوباره ارسال نکنه
+      return new Response("OK", { status: 200 });
+    }
   },
 };

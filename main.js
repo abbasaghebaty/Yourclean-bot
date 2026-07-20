@@ -16,24 +16,24 @@ export default {
     }
 
     const token = env.BOT_TOKEN;
-    const adminId = env.ADMIN_ID;
+    
+    // ✅ تبدیل ADMIN_ID به آرایه
+    const adminIds = (env.ADMIN_ID || '').split(',').map(id => id.trim());
 
     try {
-      // پیام‌های معمولی
       if (update.message) {
-        const userId = update.message.from.id;
+        const userId = String(update.message.from.id);
 
-        if (String(userId) === String(adminId)) {
+        if (adminIds.includes(userId)) {
           await handleAdminMessage(update.message, token, env);
         } else {
           await handleMessage(update.message, token, env);
         }
       }
-      // callback query ها
       else if (update.callback_query) {
-        const userId = update.callback_query.from.id;
+        const userId = String(update.callback_query.from.id);
 
-        if (String(userId) === String(adminId)) {
+        if (adminIds.includes(userId)) {
           await handleAdminCallback(update.callback_query, token, env);
         } else {
           await handleCallback(update.callback_query, token, env);

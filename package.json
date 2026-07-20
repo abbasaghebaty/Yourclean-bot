@@ -1,0 +1,14 @@
+{
+  "name": "yourcleanbot",
+  "version": "1.0.0",
+  "description": "ربات تلگرام شما شاپ - Cloudflare Worker",
+  "main": "main.js",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

@@ -286,10 +286,32 @@ function popState(session) {
   return 'main';
 }
 
-async function handleMessage(message, token) {
+async function saveUserToDB(env, user) {
+  try {
+    await env.DB.prepare(
+      `INSERT OR IGNORE INTO users 
+      (telegram_id, username, first_name, last_name)
+      VALUES (?, ?, ?, ?)`
+    )
+    .bind(
+      user.id,
+      user.username || "",
+      user.first_name || "",
+      user.last_name || ""
+    )
+    .run();
+  } catch (error) {
+    console.error('Error saving user to DB:', error);
+  }
+}
+
+async function handleMessage(message, token, env) {
   const chatId = message.chat.id;
   const text = message.text || '';
   const session = getSession(chatId);
+
+  // ذخیره اطلاعات کاربر در دیتابیس
+  await saveUserToDB(env, message.from);
 
   if (text === '/start') {
     session.stack = ['main'];
@@ -367,7 +389,6 @@ async function handleCallback(callbackQuery, token) {
       const index = parseInt(data.split(':')[2], 10);
       const item = CONFIG.faq[index];
       if (!item) return;
-      // حذف تیک سبز اضافی
       const text = `❓ ${item.q}\n\n${item.a}`;
       const inlineKeyboard = {
         inline_keyboard: [
@@ -418,7 +439,7 @@ export default {
 
     try {
       if (update.message) {
-        await handleMessage(update.message, token);
+        await handleMessage(update.message, token, env);
       } else if (update.callback_query) {
         await handleCallback(update.callback_query, token);
       }

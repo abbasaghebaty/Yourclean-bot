@@ -5,20 +5,23 @@
 // ================== تنظیمات فروشگاه (قابل تغییر) ==================
 const CONFIG = {
   shopName: "شما شاپ",
-  address: "تهران، خیابان ولیعصر، بالاتر از پارک ساعی، پلاک ۱۲۳",
-  phone: "۰۹۱۲۳۴۵۶۷۸۹",
-  supportId: "@shoma_support",
-  eitaaUrl: "https://eitaa.com/shomashop",
-  rubikaUrl: "https://rubika.ir/shomashop",
-  instagramUrl: "https://instagram.com/shomashop",
-  neshanUrl: "https://neshan.org/maps/@...",
-  googleMapsUrl: "https://maps.google.com/?q=...",
+  address: "مشهد ، بین هنور ۲۰ و ۲۲",
+  phone: "09154819081",
+  supportId: "@shoma_shop_sup",
+  eitaaUrl: "https://eitaa.com/shoma_shop",
+  rubikaUrl: "https://rubika.ir/shoma_shop",
+  instagramUrl: "https://instagram.com/shoma_shop.ir",
+  neshanUrl: "شوینده بهداشتی شما
+https://nshn.ir/35Qb1MaUIJjDVc",
+  googleMapsUrl: "https://maps.app.goo.gl/Haixv2k28U9JJi878",
   aboutText: `🏪 فروشگاه شما شاپ\n\nعرضه‌کننده انواع پوشاک زنانه و مردانه با بهترین کیفیت و مناسب‌ترین قیمت.\nرضایت شما افتخار ماست.`,
   faq: [
-    { q: "ساعات کاری فروشگاه؟", a: "شنبه تا پنجشنبه ۹ صبح تا ۹ شب، جمعه‌ها ۱۰ تا ۸ شب." },
-    { q: "روش‌های ارسال سفارش؟", a: "پست پیشتاز، تیپاکس و پیک داخل تهران." },
-    { q: "شرایط مرجوعی کالا؟", a: "تا ۷ روز پس از دریافت، در صورت سالم بودن بسته‌بندی و عدم استفاده." },
-    { q: "آیا خرید حضوری هم دارید؟", a: "بله، می‌توانید همه روزه به فروشگاه مرکزی مراجعه کنید." }
+    { q: "ساعات کاری فروشگاه؟", a: "شنبه تا پنجشنبه 
+از ساعت ۹ تا ۱۴ و ۱۷تا ۲۲" },
+    { q: "روش‌های ارسال سفارش؟", a: "ارسال رایگان در محدوده
+ارسال درون شهری با اسنپ باکس
+و سراسر کشور با پست پیشتاز" },
+    
   ]
 };
 

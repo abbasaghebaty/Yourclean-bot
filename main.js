@@ -194,6 +194,78 @@ async function sendState(chatId, state, token) {
   }
 }
 
+async function editState(chatId, messageId, state, token) {
+  switch (state) {
+    case 'contact': {
+      const text = '☎️ راه‌های ارتباطی\n\nیکی از گزینه‌های زیر را انتخاب کنید:';
+      const inlineKeyboard = {
+        inline_keyboard: [
+          [{ text: '📍 آدرس فروشگاه', callback_data: 'address' }],
+          [{ text: '📞 شماره تماس و پشتیبانی', callback_data: 'phone' }]
+        ]
+      };
+      await callApi(token, 'editMessageText', {
+        chat_id: chatId,
+        message_id: messageId,
+        text: text,
+        reply_markup: inlineKeyboard
+      });
+      break;
+    }
+    case 'address': {
+      const text = `📍 آدرس فروشگاه\n\nآدرس فروشگاه:\n${CONFIG.address}\n\nبرای مسیریابی یکی از گزینه‌های زیر را انتخاب کنید:`;
+      const inlineKeyboard = {
+        inline_keyboard: [
+          [
+            { text: '🗺 مسیریابی در نشان', url: CONFIG.neshanUrl },
+            { text: '📍 مسیریابی در گوگل مپ', url: CONFIG.googleMapsUrl }
+          ]
+        ]
+      };
+      await callApi(token, 'editMessageText', {
+        chat_id: chatId,
+        message_id: messageId,
+        text: text,
+        reply_markup: inlineKeyboard
+      });
+      break;
+    }
+    case 'phone': {
+      const text = `📞 تماس و پشتیبانی\n\nشماره تماس:\n${CONFIG.phone}\n\nآیدی پشتیبانی:\n${CONFIG.supportId}`;
+      const inlineKeyboard = {
+        inline_keyboard: [
+          [{ text: `📞 تماس با ${CONFIG.phone}`, url: `tel:${CONFIG.phone}` }]
+        ]
+      };
+      await callApi(token, 'editMessageText', {
+        chat_id: chatId,
+        message_id: messageId,
+        text: text,
+        reply_markup: inlineKeyboard
+      });
+      break;
+    }
+    case 'faq_list': {
+      const text = '❓ سوالات متداول\n\nلطفاً سوال خود را انتخاب کنید:';
+      const inlineKeyboard = {
+        inline_keyboard: CONFIG.faq.map((item, idx) => [{
+          text: item.q,
+          callback_data: `faq:q:${idx}`
+        }])
+      };
+      await callApi(token, 'editMessageText', {
+        chat_id: chatId,
+        message_id: messageId,
+        text: text,
+        reply_markup: inlineKeyboard
+      });
+      break;
+    }
+    default:
+      console.log('editState: unknown state', state);
+  }
+}
+
 function pushState(session, newState) {
   session.stack.push(newState);
 }
@@ -274,21 +346,15 @@ async function handleCallback(callbackQuery, token) {
   });
 
   try {
-    // حذف پیام قبلی برای جلوگیری از نمایش برچسب "ویرایش شده"
-    await callApi(token, 'deleteMessage', {
-      chat_id: chatId,
-      message_id: messageId
-    });
-
     if (data === 'contact') {
       pushState(session, 'contact');
-      await sendState(chatId, 'contact', token);
+      await editState(chatId, messageId, 'contact', token);
     } else if (data === 'address') {
       pushState(session, 'address');
-      await sendState(chatId, 'address', token);
+      await editState(chatId, messageId, 'address', token);
     } else if (data === 'phone') {
       pushState(session, 'phone');
-      await sendState(chatId, 'phone', token);
+      await editState(chatId, messageId, 'phone', token);
     } else if (data.startsWith('faq:q:')) {
       const index = parseInt(data.split(':')[2], 10);
       const item = CONFIG.faq[index];
@@ -299,20 +365,20 @@ async function handleCallback(callbackQuery, token) {
           [{ text: '🔙 بازگشت به سوالات', callback_data: 'faq_list' }]
         ]
       };
-      await callApi(token, 'sendMessage', {
+      await callApi(token, 'editMessageText', {
         chat_id: chatId,
+        message_id: messageId,
         text: text,
         reply_markup: inlineKeyboard
       });
     } else if (data === 'faq_list') {
-      // اطمینان از اینکه stack شامل faq_list باشد
       if (session.stack[session.stack.length - 1] !== 'faq_list') {
         pushState(session, 'faq_list');
       } else {
         session.stack = session.stack.filter(s => s !== 'faq_list');
         session.stack.push('faq_list');
       }
-      await sendState(chatId, 'faq_list', token);
+      await editState(chatId, messageId, 'faq_list', token);
     }
   } catch (error) {
     console.error('Callback error:', error);

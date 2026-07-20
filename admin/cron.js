@@ -29,32 +29,9 @@ export async function handleScheduled(env) {
 📦 <b>سفارشات امروز:</b> ${todayOrders} عدد
 ━━━━━━━━━━━━━━━━`;
 
-  // ارسال گزارش
   await callApi(token, 'sendMessage', {
     chat_id: channelId,
     text: report,
     parse_mode: 'HTML'
   });
-
-  // ارسال پیام دوم که ۵ ثانیه بعد پاک میشه
-  const deleteMsg = await callApi(token, 'sendMessage', {
-    chat_id: channelId,
-    text: '⏳ این پیام به‌زودی حذف می‌شود...'
-  });
-
-  if (deleteMsg.ok && deleteMsg.result) {
-    // ذخیره message_id توی KV برای پاک کردن در درخواست بعدی
-    await env.RATE_LIMITER.put('pending_delete', JSON.stringify({
-      chat_id: channelId,
-      message_id: deleteMsg.result.message_id
-    }), { expirationTtl: 10 });
-
-    // یه وقفه کوتاه با Promise (بهتر از setTimeout)
-    await new Promise(resolve => setTimeout(resolve, 5000));
-
-    await callApi(token, 'deleteMessage', {
-      chat_id: channelId,
-      message_id: deleteMsg.result.message_id
-    });
-  }
 }

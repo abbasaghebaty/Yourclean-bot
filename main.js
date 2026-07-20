@@ -105,24 +105,29 @@ async function sendState(chatId, state, token) {
     }
 
     case 'guide': {
-      const text = `📝 <b>راهنمای ثبت سفارش</b>\n\nابتدا محصولات و قیمت‌های <b>به‌روز</b> را از <b>کانال‌های ما</b> مشاهده کنید.\nپس از انتخاب کالا، برای ثبت سفارش از طریق <b>راه‌های ارتباطی</b> با ما تماس بگیرید.\nبا افتخار پاسخگوی شما هستیم.`;
-      const inlineKeyboard = {
-        inline_keyboard: [
-          [
-            { text: '📱 ایتا', url: CONFIG.eitaaUrl },
-            { text: '📱 روبیکا', url: CONFIG.rubikaUrl }
-          ],
-          [{ text: '☎️ راه‌های ارتباطی', callback_data: 'contact' }]
-        ]
-      };
-      await callApi(token, 'sendMessage', {
-  chat_id: chatId,
-  text: text,
-  parse_mode: 'HTML',
-  reply_markup: replyMarkup
-});
-      break;
-    }
+  const text = `📝 <b>راهنمای ثبت سفارش</b>\n\nابتدا محصولات و قیمت‌های <b>به‌روز</b> را از <b>کانال‌های ما</b> مشاهده کنید.\nپس از انتخاب کالا، برای ثبت سفارش از طریق <b>راه‌های ارتباطی</b> با ما تماس بگیرید.\nبا افتخار پاسخگوی شما هستیم.`;
+
+  const inlineKeyboard = {
+    inline_keyboard: [
+      [
+        { text: '📱 ایتا', url: CONFIG.eitaaUrl },
+        { text: '📱 روبیکا', url: CONFIG.rubikaUrl }
+      ],
+      [
+        { text: '☎️ راه‌های ارتباطی', callback_data: 'contact' }
+      ]
+    ]
+  };
+
+  await callApi(token, 'sendMessage', {
+    chat_id: chatId,
+    text: text,
+    parse_mode: 'HTML',
+    reply_markup: inlineKeyboard
+  });
+
+  break;
+}
 
     case 'contact': {
       const text = '☎️ راه‌های ارتباطی\n\nیکی از گزینه‌های زیر را انتخاب کنید:';

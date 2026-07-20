@@ -1,4 +1,4 @@
-const CONFIG = {
+export const CONFIG = {
   shopName: "شما شاپ",
   address: "مشهد ، بین هنور ۲۰ و ۲۲",
   phone: "09154819081",

@@ -12,11 +12,7 @@ export async function saveUserToDB(env, user) {
       user.last_name || ""
     )
     .run();
-
-    // اگه کاربر قبلاً وجود داشت، created_at رو آپدیت نکن
-    // فقط برای کاربرای جدید created_at ست میشه
   } catch (error) {
-    // اگه ستون created_at وجود نداشت، بدون created_at ذخیره کن
     try {
       await env.DB.prepare(
         `INSERT OR IGNORE INTO users 

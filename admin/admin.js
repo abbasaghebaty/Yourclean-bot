@@ -32,6 +32,37 @@ async function sendAdminMenu(chatId, token) {
   });
 }
 
+// تابع جدید برای ساخت متن گزارش
+async function generateReport(env) {
+  const totalUsers = await getTotalUsers(env);
+  const todayUsers = await getTodayUsers(env);
+  const todayOrders = await getTodayOrders(env);
+
+  const now = new Date().toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' });
+
+  return `📊 گزارش آماری شما شاپ
+🕒 تاریخ: ${now}
+
+👥 کل کاربران: ${totalUsers}
+📅 کاربران امروز: ${todayUsers}
+📦 سفارشات امروز: ${todayOrders}
+
+🤖 ربات: @yourcleanbot`;
+}
+
+// تابع جدید برای ارسال گزارش به کانال
+async function sendReportToChannel(token, env) {
+  const channelId = env.CHANNEL_ID;
+  if (!channelId) return null;
+
+  const report = await generateReport(env);
+  await callApi(token, 'sendMessage', {
+    chat_id: channelId,
+    text: report
+  });
+  return report;
+}
+
 export async function handleAdminMessage(message, token, env) {
   const chatId = message.chat.id;
   const text = message.text || '';
@@ -139,6 +170,32 @@ export async function handleAdminCallback(callbackQuery, token, env) {
           text: '🚪 شما از پنل مدیریت خارج شدید.'
         });
         await sendMainMenu(chatId, token);
+        break;
+      }
+
+      // دکمه جدید: ارسال گزارش به کانال
+      case 'admin_send_report': {
+        const channelId = env.CHANNEL_ID;
+        if (!channelId) {
+          await callApi(token, 'editMessageText', {
+            chat_id: chatId,
+            message_id: messageId,
+            text: '❌ کانال گزارش تنظیم نشده است.\nلطفاً CHANNEL_ID را در تنظیمات ربات اضافه کنید.',
+            reply_markup: backToAdminKeyboard()
+          });
+          break;
+        }
+        await callApi(token, 'editMessageText', {
+          chat_id: chatId,
+          message_id: messageId,
+          text: '📡 در حال ارسال گزارش به کانال...'
+        });
+        const report = await sendReportToChannel(token, env);
+        await callApi(token, 'sendMessage', {
+          chat_id: chatId,
+          text: report ? `✅ گزارش با موفقیت به کانال ارسال شد:\n\n${report}` : '❌ خطا در ارسال گزارش'
+        });
+        await sendAdminMenu(chatId, token);
         break;
       }
     }

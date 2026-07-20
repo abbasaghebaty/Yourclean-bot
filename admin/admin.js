@@ -54,23 +54,12 @@ async function sendReportToChannel(token, env) {
   const channelId = env.CHANNEL_ID || '-1003788455797';
 
   const report = await generateReport(env);
-  const result = await callApi(token, 'sendMessage', {
+  await callApi(token, 'sendMessage', {
     chat_id: channelId,
     text: report,
     parse_mode: 'HTML'
   });
-
-  // ۵ ثانیه بعد پاک کن
-  if (result.ok && result.result) {
-    setTimeout(async () => {
-      await callApi(token, 'deleteMessage', {
-        chat_id: channelId,
-        message_id: result.result.message_id
-      });
-    }, 5000);
-  }
-
-  return result.ok;
+  return true;
 }
 
 export async function handleAdminMessage(message, token, env) {
@@ -184,13 +173,20 @@ export async function handleAdminCallback(callbackQuery, token, env) {
       }
 
       case 'admin_send_report': {
-        const ok = await sendReportToChannel(token, env);
-        // فقط یه پیام توی خود ربات نشون بده، نه توی کانال
-        await callApi(token, 'answerCallbackQuery', {
-          callback_query_id: callbackQuery.id,
-          text: ok ? '✅ گزارش ارسال شد و ۵ ثانیه دیگر پاک می‌شود' : '❌ خطا در ارسال',
-          show_alert: true
+        await sendReportToChannel(token, env);
+        // پیام موفقیت توی پیوی با پاک شدن بعد ۵ ثانیه
+        const msg = await callApi(token, 'sendMessage', {
+          chat_id: chatId,
+          text: '✅ گزارش با موفقیت به کانال ارسال شد.'
         });
+        if (msg.ok && msg.result) {
+          setTimeout(async () => {
+            await callApi(token, 'deleteMessage', {
+              chat_id: chatId,
+              message_id: msg.result.message_id
+            });
+          }, 5000);
+        }
         break;
       }
     }

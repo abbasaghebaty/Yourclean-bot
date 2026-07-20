@@ -27,13 +27,43 @@ export default {
     const userId = update.message?.from?.id || update.callback_query?.from?.id;
     const today = new Date().toISOString().split('T')[0];
 
+    // فقط برای کاربران عادی (غیر ادمین) محدودیت اعمال می‌شود
     if (!adminIds.includes(userId)) {
-      const key = `rate:${userId}:${today}`;
-      
-      let count = await env.RATE_LIMITER.get(key);
+      const rateKey = `rate:${userId}:${today}`; // کلید شمارش درخواست‌ها
+      const notifyKey = `notify:${userId}:${today}`; // کلید برای جلوگیری از ارسال مکرر اخطار
+
+      let count = await env.RATE_LIMITER.get(rateKey);
       count = count ? parseInt(count) : 0;
 
+      // بررسی می‌کنیم که آیا امروز قبلاً برای این کاربر اخطار فرستاده شده است
+      const alreadyNotified = await env.RATE_LIMITER.get(notifyKey);
+
+      // اگر کاربر به محدودیت رسیده باشد
       if (count >= DAILY_LIMIT) {
+        // اگر قبلاً اخطار فرستاده نشده، به همه ادمین‌ها پیام می‌دهیم
+        if (!alreadyNotified) {
+          // اطلاعات کاربر برای ارسال به ادمین
+          const userInfo = update.message?.from || update.callback_query?.from || {};
+          const fullName = [userInfo.first_name, userInfo.last_name].filter(Boolean).join(' ') || 'نامشخص';
+          const username = userInfo.username ? `@${userInfo.username}` : 'ندارد';
+
+          for (const adminId of adminIds) {
+            await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: adminId,
+                text: `🚨 کاربر به محدودیت روزانه رسید!\n\n🆔 User ID: <code>${userId}</code>\n👤 نام: ${fullName}\n👤 یوزرنیم: ${username}\n📊 تعداد درخواست: <b>${count}</b>\n📅 تاریخ: ${today}`,
+                parse_mode: 'HTML'
+              })
+            });
+          }
+
+          // ثبت می‌کنیم که اخطار امروز فرستاده شده تا دوباره ارسال نشود
+          await env.RATE_LIMITER.put(notifyKey, '1', { expirationTtl: 86400 }); // 24 ساعت
+        }
+
+        // پاسخ به کاربر (مخصوصاً وقتی دکمه کلیک کرده باشد)
         if (update.callback_query) {
           await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
             method: 'POST',
@@ -45,12 +75,14 @@ export default {
             })
           });
         }
-        return new Response('OK');
+        return new Response('OK'); // درخواست را در همینجا متوقف می‌کنیم
       }
 
-      await env.RATE_LIMITER.put(key, count + 1, { expirationTtl: 86400 });
+      // اگر به محدودیت نرسیده، شمارنده را یکی افزایش می‌دهیم
+      await env.RATE_LIMITER.put(rateKey, count + 1, { expirationTtl: 86400 });
     }
 
+    // --- پردازش اصلی پیام‌ها و دکمه‌ها ---
     try {
       if (update.message) {
         if (adminIds.includes(userId)) {

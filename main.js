@@ -1,5 +1,6 @@
 import { handleMessage, handleCallback } from './customer/bot.js';
 import { handleAdminMessage, handleAdminCallback } from './admin/admin.js';
+import { handleScheduled } from './admin/cron.js';
 
 export default {
   async fetch(request, env) {
@@ -42,5 +43,9 @@ export default {
     }
 
     return new Response('OK');
+  },
+
+  async scheduled(event, env) {
+    await handleScheduled(env);
   }
 };

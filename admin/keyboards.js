@@ -5,6 +5,7 @@ export function adminMainKeyboard() {
       [{ text: '📅 کاربران امروز', callback_data: 'admin_today_users' }],
       [{ text: '📦 سفارشات امروز', callback_data: 'admin_today_orders' }],
       [{ text: '📣 ارسال پیام همگانی', callback_data: 'admin_broadcast' }],
+      [{ text: '📊 ارسال گزارش به کانال', callback_data: 'admin_send_report' }],
       [{ text: '🚪 خروج از پنل مدیریت', callback_data: 'admin_exit' }]
     ]
   };

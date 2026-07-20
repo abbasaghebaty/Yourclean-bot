@@ -1,96 +1,31 @@
-import { sendMainMenu } from '../customer/bot.js';
-import { adminMainKeyboard, backToAdminKeyboard } from './keyboards.js';
-import { getTotalUsers, getTodayUsers, getTodayOrders, broadcastMessage } from './database.js';
-
-const adminSessions = new Map();
-
-function getAdminSession(chatId) {
-  if (!adminSessions.has(chatId)) {
-    adminSessions.set(chatId, null);
-  }
-  return adminSessions.get(chatId);
-}
-
-function setAdminSession(chatId, session) {
-  adminSessions.set(chatId, session);
-}
-
-async function callApi(token, method, body) {
-  const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  return await response.json();
-}
-
-async function sendAdminMenu(chatId, token) {
-  await callApi(token, 'sendMessage', {
-    chat_id: chatId,
-    text: '🔐 پنل مدیریت\nلطفاً یک گزینه را انتخاب کنید:',
-    reply_markup: adminMainKeyboard()
-  });
-}
-
-async function generateReport(env) {
-  const totalUsers = await getTotalUsers(env);
-  const todayUsers = await getTodayUsers(env);
-  const todayOrders = await getTodayOrders(env);
-
-  const now = new Date().toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' });
-
-  return `📊 <b>گزارش روزانه شما شاپ</b>
-
-📅 <b>تاریخ:</b> ${now}
-
-━━━━━━━━━━━━━━━━
-👥 <b>کل کاربران:</b> ${totalUsers} نفر
-🆕 <b>کاربران امروز:</b> ${todayUsers} نفر
-📦 <b>سفارشات امروز:</b> ${todayOrders} عدد
-━━━━━━━━━━━━━━━━`;
-}
-
-async function sendReportToChannel(token, env) {
-  const channelId = env.CHANNEL_ID || '-1003788455797';
-
-  const report = await generateReport(env);
-  await callApi(token, 'sendMessage', {
-    chat_id: channelId,
-    text: report,
-    parse_mode: 'HTML'
-  });
-  return true;
-}
+// ==============================================
+// 📂 admin/admin.js - پنل مدیریت
+// ==============================================
 
 export async function handleAdminMessage(message, token, env) {
   const chatId = message.chat.id;
   const text = message.text || '';
 
-  if (text === '/admin') {
-    setAdminSession(chatId, { state: 'main' });
-    await sendAdminMenu(chatId, token);
-    return;
-  }
-
-  const session = getAdminSession(chatId);
-
-  if (session && session.state === 'awaiting_broadcast_message') {
-    setAdminSession(chatId, { state: 'main' });
-    await callApi(token, 'sendMessage', {
-      chat_id: chatId,
-      text: '📣 در حال ارسال پیام همگانی...'
+  if (text === '/start') {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: '🛡️ پنل مدیریت\n\nبه پنل مدیریت خوش آمدید.',
+        reply_markup: adminMenuKeyboard()
+      })
     });
-    const { success, fail } = await broadcastMessage(env, token, text);
-    await callApi(token, 'sendMessage', {
-      chat_id: chatId,
-      text: `✅ ارسال به ${success} نفر\n❌ ناموفق: ${fail}`
+  } else {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: `📩 پیام شما دریافت شد:\n\n${text}`
+      })
     });
-    await sendAdminMenu(chatId, token);
-    return;
   }
-
-  const { handleMessage: customerHandleMessage } = await import('../customer/bot.js');
-  await customerHandleMessage(message, token, env);
 }
 
 export async function handleAdminCallback(callbackQuery, token, env) {
@@ -98,99 +33,142 @@ export async function handleAdminCallback(callbackQuery, token, env) {
   const messageId = callbackQuery.message.message_id;
   const data = callbackQuery.data;
 
-  await callApi(token, 'answerCallbackQuery', {
-    callback_query_id: callbackQuery.id
+  // پاسخ به تلگرام که دکمه دریافت شد
+  await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      callback_query_id: callbackQuery.id
+    })
   });
 
   try {
-    switch (data) {
-      case 'admin_total_users': {
-        const count = await getTotalUsers(env);
-        await callApi(token, 'editMessageText', {
+    // ==========================================
+    // دکمه‌های پنل مدیریت
+    // ==========================================
+    if (data === 'admin_users') {
+      // دریافت لیست کاربران از دیتابیس
+      let users = [];
+      try {
+        const result = await env.DB.prepare(
+          'SELECT telegram_id, username, first_name, created_at FROM users ORDER BY created_at DESC LIMIT 20'
+        ).all();
+        users = result.results || [];
+      } catch (e) {
+        console.error('DB error:', e);
+      }
+
+      let text = '👥 **لیست کاربران (۲۰ نفر آخر):**\n\n';
+      if (users.length === 0) {
+        text += 'هیچ کاربری یافت نشد.';
+      } else {
+        users.forEach((user, index) => {
+          text += `${index + 1}. ID: \`${user.telegram_id}\``;
+          if (user.username) text += ` | @${user.username}`;
+          if (user.first_name) text += ` | ${user.first_name}`;
+          text += `\n   📅 ${user.created_at || 'نامشخص'}\n\n`;
+        });
+      }
+
+      await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           chat_id: chatId,
           message_id: messageId,
-          text: `👥 تعداد کل کاربران: ${count}`,
-          reply_markup: backToAdminKeyboard()
-        });
-        break;
+          text: text,
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🔙 بازگشت به منو', callback_data: 'admin_back' }]
+            ]
+          }
+        })
+      });
+    } 
+    else if (data === 'admin_stats') {
+      // دریافت آمار از دیتابیس
+      let totalUsers = 0;
+      try {
+        const result = await env.DB.prepare('SELECT COUNT(*) as count FROM users').first();
+        totalUsers = result?.count || 0;
+      } catch (e) {
+        console.error('DB error:', e);
       }
 
-      case 'admin_today_users': {
-        const count = await getTodayUsers(env);
-        await callApi(token, 'editMessageText', {
+      const text = `📊 **آمار ربات:**\n\n👥 تعداد کل کاربران: **${totalUsers}**\n📅 تاریخ: ${new Date().toLocaleDateString('fa-IR')}`;
+
+      await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           chat_id: chatId,
           message_id: messageId,
-          text: `📅 کاربران امروز: ${count}`,
-          reply_markup: backToAdminKeyboard()
-        });
-        break;
-      }
-
-      case 'admin_today_orders': {
-        const count = await getTodayOrders(env);
-        await callApi(token, 'editMessageText', {
+          text: text,
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🔙 بازگشت به منو', callback_data: 'admin_back' }]
+            ]
+          }
+        })
+      });
+    } 
+    else if (data === 'admin_broadcast') {
+      // ارسال همگانی - مرحله ۱: دریافت پیام
+      await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           chat_id: chatId,
           message_id: messageId,
-          text: `📦 سفارشات امروز: ${count}`,
-          reply_markup: backToAdminKeyboard()
-        });
-        break;
-      }
-
-      case 'admin_broadcast': {
-        setAdminSession(chatId, { state: 'awaiting_broadcast_message' });
-        await callApi(token, 'editMessageText', {
+          text: '📢 **ارسال پیام همگانی**\n\nلطفاً پیام مورد نظر خود را ارسال کنید.\n\n⚠️ این پیام برای **همه کاربران** ارسال خواهد شد.',
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🔙 انصراف', callback_data: 'admin_back' }]
+            ]
+          }
+        })
+      });
+    } 
+    else if (data === 'admin_back') {
+      // برگشت به منوی اصلی ادمین
+      await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           chat_id: chatId,
           message_id: messageId,
-          text: '📝 لطفاً متن پیام همگانی خود را ارسال کنید:'
-        });
-        break;
-      }
-
-      case 'admin_main': {
-        setAdminSession(chatId, { state: 'main' });
-        await callApi(token, 'editMessageText', {
-          chat_id: chatId,
-          message_id: messageId,
-          text: '🔐 پنل مدیریت\nلطفاً یک گزینه را انتخاب کنید:',
-          reply_markup: adminMainKeyboard()
-        });
-        break;
-      }
-
-      case 'admin_exit': {
-        setAdminSession(chatId, null);
-        await callApi(token, 'deleteMessage', {
-          chat_id: chatId,
-          message_id: messageId
-        });
-        await callApi(token, 'sendMessage', {
-          chat_id: chatId,
-          text: '🚪 شما از پنل مدیریت خارج شدید.'
-        });
-        await sendMainMenu(chatId, token);
-        break;
-      }
-
-      case 'admin_send_report': {
-        await sendReportToChannel(token, env);
-        // پیام موفقیت توی پیوی با پاک شدن بعد ۵ ثانیه
-        const msg = await callApi(token, 'sendMessage', {
-          chat_id: chatId,
-          text: '✅ گزارش با موفقیت به کانال ارسال شد.'
-        });
-        if (msg.ok && msg.result) {
-          setTimeout(async () => {
-            await callApi(token, 'deleteMessage', {
-              chat_id: chatId,
-              message_id: msg.result.message_id
-            });
-          }, 5000);
-        }
-        break;
-      }
+          text: '🛡️ **پنل مدیریت**\n\nبه پنل مدیریت خوش آمدید.\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید.',
+          parse_mode: 'Markdown',
+          reply_markup: adminMenuKeyboard()
+        })
+      });
     }
   } catch (error) {
     console.error('Admin callback error:', error);
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: '⚠️ خطایی رخ داد. لطفاً دوباره تلاش کنید.'
+      })
+    });
   }
+}
+
+// ==============================================
+// کیبورد منوی مدیریت
+// ==============================================
+function adminMenuKeyboard() {
+  return {
+    inline_keyboard: [
+      [{ text: '👥 لیست کاربران', callback_data: 'admin_users' }],
+      [{ text: '📊 آمار ربات', callback_data: 'admin_stats' }],
+      [{ text: '📢 ارسال همگانی', callback_data: 'admin_broadcast' }],
+      [{ text: '🏠 منوی اصلی', callback_data: 'main_menu' }]
+    ]
+  };
 }

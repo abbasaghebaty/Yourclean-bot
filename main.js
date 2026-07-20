@@ -21,6 +21,10 @@ export default {
 
     const ADMIN_ID = env.ADMIN_ID ? parseInt(env.ADMIN_ID) : null;
 
+    // فقط برای تست - این دو خط رو اضافه کن
+    console.log('ADMIN_ID from env:', ADMIN_ID);
+    console.log('User ID:', update.message?.from?.id || update.callback_query?.from?.id);
+
     try {
       if (update.message) {
         const userId = update.message.from.id;

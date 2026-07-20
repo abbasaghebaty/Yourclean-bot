@@ -47,21 +47,30 @@ async function generateReport(env) {
 👥 <b>کل کاربران:</b> ${totalUsers} نفر
 🆕 <b>کاربران امروز:</b> ${todayUsers} نفر
 📦 <b>سفارشات امروز:</b> ${todayOrders} عدد
-━━━━━━━━━━━━━━━━
-
-🛍 <b>وضعیت فروشگاه:</b> فعال ✅`;
+━━━━━━━━━━━━━━━━`;
 }
 
 async function sendReportToChannel(token, env) {
   const channelId = env.CHANNEL_ID || '-1003788455797';
 
   const report = await generateReport(env);
-  await callApi(token, 'sendMessage', {
+  const result = await callApi(token, 'sendMessage', {
     chat_id: channelId,
     text: report,
     parse_mode: 'HTML'
   });
-  return report;
+
+  // ۵ ثانیه بعد پاک کن
+  if (result.ok && result.result) {
+    setTimeout(async () => {
+      await callApi(token, 'deleteMessage', {
+        chat_id: channelId,
+        message_id: result.result.message_id
+      });
+    }, 5000);
+  }
+
+  return result.ok;
 }
 
 export async function handleAdminMessage(message, token, env) {
@@ -175,24 +184,13 @@ export async function handleAdminCallback(callbackQuery, token, env) {
       }
 
       case 'admin_send_report': {
-        await callApi(token, 'editMessageText', {
-          chat_id: chatId,
-          message_id: messageId,
-          text: '📡 در حال ارسال گزارش به کانال...'
+        const ok = await sendReportToChannel(token, env);
+        // فقط یه پیام توی خود ربات نشون بده، نه توی کانال
+        await callApi(token, 'answerCallbackQuery', {
+          callback_query_id: callbackQuery.id,
+          text: ok ? '✅ گزارش ارسال شد و ۵ ثانیه دیگر پاک می‌شود' : '❌ خطا در ارسال',
+          show_alert: true
         });
-        const report = await sendReportToChannel(token, env);
-        if (report) {
-          await callApi(token, 'sendMessage', {
-            chat_id: chatId,
-            text: '✅ گزارش با موفقیت به کانال ارسال شد.'
-          });
-        } else {
-          await callApi(token, 'sendMessage', {
-            chat_id: chatId,
-            text: '❌ خطا در ارسال گزارش'
-          });
-        }
-        await sendAdminMenu(chatId, token);
         break;
       }
     }

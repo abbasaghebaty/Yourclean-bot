@@ -6,3 +6,6 @@ compatibility_date = "2026-07-13"
 binding = "DB"
 database_name = "shoma-bot-db"
 database_id = "7571adb3-0a91-4789-9805-8a76498c303d"
+
+[triggers]
+crons = ["0 8 * * *"]

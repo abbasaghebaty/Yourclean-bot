@@ -15,19 +15,25 @@ export async function handleScheduled(env) {
 
   const now = new Date().toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' });
 
-  const report = `📊 گزارش روزانه شما شاپ
-🕒 ${now}
+  const report = `📊 <b>گزارش روزانه شما شاپ</b>
 
-👥 کل کاربران: ${totalUsers}
-📅 کاربران امروز: ${todayUsers}
-📦 سفارشات امروز: ${todayOrders}`;
+📅 <b>تاریخ:</b> ${now}
+
+━━━━━━━━━━━━━━━━
+👥 <b>کل کاربران:</b> ${totalUsers} نفر
+🆕 <b>کاربران امروز:</b> ${todayUsers} نفر
+📦 <b>سفارشات امروز:</b> ${todayOrders} عدد
+━━━━━━━━━━━━━━━━
+
+🛍 <b>وضعیت فروشگاه:</b> فعال ✅`;
 
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       chat_id: channelId,
-      text: report
+      text: report,
+      parse_mode: 'HTML'
     })
   });
 }

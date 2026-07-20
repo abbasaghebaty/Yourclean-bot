@@ -83,12 +83,8 @@ export default {
           await handleMessage(update.message, token, env);
         }
       } else if (update.callback_query) {
-        if (adminIds.includes(userId)) {
-          await handleAdminCallback(update.callback_query, token, env);
-        } else {
-          // ✅ اینجا env رو هم پاس بده
-          await handleCallback(update.callback_query, token, env);
-        }
+        // ✅ همه کاربران (ادمین و عادی) از یک هندلر استفاده میکنن
+        await handleCallback(update.callback_query, token);
       }
     } catch (error) {
       console.error('Unhandled error:', error);

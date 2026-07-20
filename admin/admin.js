@@ -2,17 +2,35 @@
 // 📂 admin/admin.js - پنل مدیریت
 // ==============================================
 
+// ==============================================
+// کیبورد منوی مدیریت
+// ==============================================
+function adminMenuKeyboard() {
+  return {
+    inline_keyboard: [
+      [{ text: '👥 لیست کاربران', callback_data: 'admin_users' }],
+      [{ text: '📊 آمار ربات', callback_data: 'admin_stats' }],
+      [{ text: '📢 ارسال همگانی', callback_data: 'admin_broadcast' }],
+      [{ text: '🔙 بازگشت به منوی کاربری', callback_data: 'back_to_user_menu' }]
+    ]
+  };
+}
+
+// ==============================================
+// هندلر پیام‌های ادمین
+// ==============================================
 export async function handleAdminMessage(message, token, env) {
   const chatId = message.chat.id;
   const text = message.text || '';
 
-  if (text === '/start') {
+  if (text === '/start' || text === '🛡️ پنل مدیریت' || text === '🔙 بازگشت به پنل مدیریت') {
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: chatId,
-        text: '🛡️ پنل مدیریت\n\nبه پنل مدیریت خوش آمدید.',
+        text: '🛡️ **پنل مدیریت**\n\nبه پنل مدیریت خوش آمدید.\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید.',
+        parse_mode: 'Markdown',
         reply_markup: adminMenuKeyboard()
       })
     });
@@ -28,6 +46,9 @@ export async function handleAdminMessage(message, token, env) {
   }
 }
 
+// ==============================================
+// هندلر دکمه‌های شیشه‌ای ادمین
+// ==============================================
 export async function handleAdminCallback(callbackQuery, token, env) {
   const chatId = callbackQuery.message.chat.id;
   const messageId = callbackQuery.message.message_id;
@@ -44,10 +65,9 @@ export async function handleAdminCallback(callbackQuery, token, env) {
 
   try {
     // ==========================================
-    // دکمه‌های پنل مدیریت
+    // دکمه: لیست کاربران
     // ==========================================
     if (data === 'admin_users') {
-      // دریافت لیست کاربران از دیتابیس
       let users = [];
       try {
         const result = await env.DB.prepare(
@@ -86,8 +106,10 @@ export async function handleAdminCallback(callbackQuery, token, env) {
         })
       });
     } 
+    // ==========================================
+    // دکمه: آمار ربات
+    // ==========================================
     else if (data === 'admin_stats') {
-      // دریافت آمار از دیتابیس
       let totalUsers = 0;
       try {
         const result = await env.DB.prepare('SELECT COUNT(*) as count FROM users').first();
@@ -114,8 +136,10 @@ export async function handleAdminCallback(callbackQuery, token, env) {
         })
       });
     } 
+    // ==========================================
+    // دکمه: ارسال همگانی
+    // ==========================================
     else if (data === 'admin_broadcast') {
-      // ارسال همگانی - مرحله ۱: دریافت پیام
       await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -132,8 +156,10 @@ export async function handleAdminCallback(callbackQuery, token, env) {
         })
       });
     } 
+    // ==========================================
+    // دکمه: برگشت به منو
+    // ==========================================
     else if (data === 'admin_back') {
-      // برگشت به منوی اصلی ادمین
       await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -143,6 +169,39 @@ export async function handleAdminCallback(callbackQuery, token, env) {
           text: '🛡️ **پنل مدیریت**\n\nبه پنل مدیریت خوش آمدید.\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید.',
           parse_mode: 'Markdown',
           reply_markup: adminMenuKeyboard()
+        })
+      });
+    }
+    // ==========================================
+    // دکمه: برگشت به منوی کاربری
+    // ==========================================
+    else if (data === 'back_to_user_menu') {
+      // حذف پیام پنل مدیریت
+      await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          message_id: messageId
+        })
+      });
+      
+      // ارسال منوی کاربری
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: '🏪 به فروشگاه خوش آمدید',
+          reply_markup: {
+            keyboard: [
+              [{ text: '📦 دریافت لیست محصولات' }, { text: '☎️ راه‌های ارتباطی' }],
+              [{ text: '📝 راهنمای ثبت سفارش' }],
+              [{ text: '🏪 درباره ما' }, { text: '❓ سوالات متداول' }],
+              [{ text: '🛡️ پنل مدیریت' }, { text: '🏠 منوی اصلی' }]
+            ],
+            resize_keyboard: true
+          }
         })
       });
     }
@@ -157,18 +216,4 @@ export async function handleAdminCallback(callbackQuery, token, env) {
       })
     });
   }
-}
-
-// ==============================================
-// کیبورد منوی مدیریت
-// ==============================================
-function adminMenuKeyboard() {
-  return {
-    inline_keyboard: [
-      [{ text: '👥 لیست کاربران', callback_data: 'admin_users' }],
-      [{ text: '📊 آمار ربات', callback_data: 'admin_stats' }],
-      [{ text: '📢 ارسال همگانی', callback_data: 'admin_broadcast' }],
-      [{ text: '🏠 منوی اصلی', callback_data: 'main_menu' }]
-    ]
-  };
 }

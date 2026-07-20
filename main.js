@@ -1,8 +1,3 @@
-// شما شاپ - ربات تلگرام فروشگاهی
-// قابل اجرا روی Cloudflare Workers 
-// بدون نیاز به هیچ کتابخانه اضافی
-
-// ================== تنظیمات فروشگاه (قابل تغییر) ==================
 const CONFIG = {
   shopName: "شما شاپ",
   address: "مشهد ، بین هنور ۲۰ و ۲۲",
@@ -11,23 +6,24 @@ const CONFIG = {
   eitaaUrl: "https://eitaa.com/shoma_shop",
   rubikaUrl: "https://rubika.ir/shoma_shop",
   instagramUrl: "https://instagram.com/shoma_shop.ir",
-  neshanUrl: "شوینده بهداشتی شما
-https://nshn.ir/35Qb1MaUIJjDVc",
+  neshanUrl: "https://nshn.ir/35Qb1MaUIJjDVc",
   googleMapsUrl: "https://maps.app.goo.gl/Haixv2k28U9JJi878",
-  aboutText: `🏪 فروشگاه شما شاپ\n\nعرضه‌کننده انواع پوشاک زنانه و مردانه با بهترین کیفیت و مناسب‌ترین قیمت.\nرضایت شما افتخار ماست.`,
+  aboutText: `🏪 فروشگاه شما شاپ\n\nعرضه‌کننده انواع محصولات شوینده، بهداشتی و مصرفی با بهترین کیفیت و مناسب‌ترین قیمت.\nرضایت شما افتخار ماست.`,
   faq: [
-    { q: "ساعات کاری فروشگاه؟", a: "شنبه تا پنجشنبه 
-از ساعت ۹ تا ۱۴ و ۱۷تا ۲۲" },
-    { q: "روش‌های ارسال سفارش؟", a: "ارسال رایگان در محدوده
+    {
+      q: "ساعات کاری فروشگاه؟",
+      a: `شنبه تا پنجشنبه
+از ساعت ۹ تا ۱۴ و ۱۷تا ۲۲`
+    },
+    {
+      q: "روش‌های ارسال سفارش؟",
+      a: `ارسال رایگان در محدوده
 ارسال درون شهری با اسنپ باکس
-و سراسر کشور با پست پیشتاز" },
-    
+و سراسر کشور با پست پیشتاز`
+    }
   ]
 };
 
-// ================== ذخیره‌سازی جلسات در حافظه ==================
-// در محیط serverless به صورت موقت نگهداری می‌شود.
-// برای نسخه نهایی می‌توان از KV استفاده کرد.
 const sessions = new Map();
 
 function getSession(chatId) {
@@ -37,7 +33,6 @@ function getSession(chatId) {
   return sessions.get(chatId);
 }
 
-// ================== ابزارهای ارتباط با Telegram API ==================
 async function callApi(token, method, body) {
   const url = `https://api.telegram.org/bot${token}/${method}`;
   const init = {
@@ -53,9 +48,6 @@ async function callApi(token, method, body) {
   return data;
 }
 
-// ================== کیبوردها ==================
-
-// کیبورد اصلی (پایین چت)
 function mainReplyKeyboard() {
   return {
     keyboard: [
@@ -69,15 +61,12 @@ function mainReplyKeyboard() {
   };
 }
 
-// ================== توابع ارسال / ویرایش پیام ==================
-
 async function sendMainMenu(chatId, token) {
-  const text = `🏪 به فروشگاه **${CONFIG.shopName}** خوش آمدید\n\nلطفاً گزینه مورد نظر خود را انتخاب کنید.`;
+  const text = `🏪 به فروشگاه ${CONFIG.shopName} خوش آمدید\n\nلطفاً گزینه مورد نظر خود را انتخاب کنید.`;
   const replyMarkup = mainReplyKeyboard();
   await callApi(token, 'sendMessage', {
     chat_id: chatId,
     text: text,
-    parse_mode: 'Markdown',
     reply_markup: replyMarkup
   });
 }
@@ -96,7 +85,8 @@ async function sendState(chatId, state, token) {
             { text: '📱 ایتا', url: CONFIG.eitaaUrl },
             { text: '📱 روبیکا', url: CONFIG.rubikaUrl }
           ],
-          [{ text: '📸 اینستاگرام', url: CONFIG.instagramUrl }]
+          [{ text: '📸 اینستاگرام', url: CONFIG.instagramUrl }],
+          [{ text: '🔙 بازگشت', callback_data: 'back' }]
         ]
       };
       await callApi(token, 'sendMessage', {
@@ -115,7 +105,8 @@ async function sendState(chatId, state, token) {
             { text: '📱 ایتا', url: CONFIG.eitaaUrl },
             { text: '📱 روبیکا', url: CONFIG.rubikaUrl }
           ],
-          [{ text: '☎️ راه‌های ارتباطی', callback_data: 'contact' }]
+          [{ text: '☎️ راه‌های ارتباطی', callback_data: 'contact' }],
+          [{ text: '🔙 بازگشت', callback_data: 'back' }]
         ]
       };
       await callApi(token, 'sendMessage', {
@@ -131,7 +122,8 @@ async function sendState(chatId, state, token) {
       const inlineKeyboard = {
         inline_keyboard: [
           [{ text: '📍 آدرس فروشگاه', callback_data: 'address' }],
-          [{ text: '📞 شماره تماس و پشتیبانی', callback_data: 'phone' }]
+          [{ text: '📞 شماره تماس و پشتیبانی', callback_data: 'phone' }],
+          [{ text: '🔙 بازگشت', callback_data: 'back' }]
         ]
       };
       await callApi(token, 'sendMessage', {
@@ -149,7 +141,8 @@ async function sendState(chatId, state, token) {
           [
             { text: '🗺 مسیریابی در نشان', url: CONFIG.neshanUrl },
             { text: '📍 مسیریابی در گوگل مپ', url: CONFIG.googleMapsUrl }
-          ]
+          ],
+          [{ text: '🔙 بازگشت', callback_data: 'back' }]
         ]
       };
       await callApi(token, 'sendMessage', {
@@ -162,19 +155,30 @@ async function sendState(chatId, state, token) {
 
     case 'phone': {
       const text = `📞 تماس و پشتیبانی\n\nشماره تماس:\n${CONFIG.phone}\n\nآیدی پشتیبانی:\n${CONFIG.supportId}`;
+      const inlineKeyboard = {
+        inline_keyboard: [
+          [{ text: '🔙 بازگشت', callback_data: 'back' }]
+        ]
+      };
       await callApi(token, 'sendMessage', {
         chat_id: chatId,
-        text: text
-        // بدون inline keyboard
+        text: text,
+        reply_markup: inlineKeyboard
       });
       break;
     }
 
     case 'about': {
       const text = CONFIG.aboutText;
+      const inlineKeyboard = {
+        inline_keyboard: [
+          [{ text: '🔙 بازگشت', callback_data: 'back' }]
+        ]
+      };
       await callApi(token, 'sendMessage', {
         chat_id: chatId,
-        text: text
+        text: text,
+        reply_markup: inlineKeyboard
       });
       break;
     }
@@ -185,7 +189,7 @@ async function sendState(chatId, state, token) {
         inline_keyboard: CONFIG.faq.map((item, idx) => [{
           text: item.q,
           callback_data: `faq:q:${idx}`
-        }])
+        }]).concat([[{ text: '🔙 بازگشت', callback_data: 'back' }]])
       };
       await callApi(token, 'sendMessage', {
         chat_id: chatId,
@@ -196,12 +200,10 @@ async function sendState(chatId, state, token) {
     }
 
     default:
-      // در صورت نامعتبر بودن state، به منوی اصلی برگردان
       await sendMainMenu(chatId, token);
   }
 }
 
-// ================== مدیریت ناوبری ==================
 function pushState(session, newState) {
   session.stack.push(newState);
 }
@@ -214,20 +216,17 @@ function popState(session) {
   return 'main';
 }
 
-// ================== پردازش پیام‌های متنی ==================
 async function handleMessage(message, token) {
   const chatId = message.chat.id;
   const text = message.text || '';
   const session = getSession(chatId);
 
-  // مدیریت دستور /start
   if (text === '/start') {
     session.stack = ['main'];
     await sendMainMenu(chatId, token);
     return;
   }
 
-  // کلیک روی دکمه‌های Reply Keyboard (متنی)
   switch (text) {
     case '🏠 منوی اصلی':
       session.stack = ['main'];
@@ -261,37 +260,37 @@ async function handleMessage(message, token) {
 
     case '🔙 بازگشت': {
       const previousState = popState(session);
-      // ارسال پیام جدید برای حالت قبلی
       await sendState(chatId, previousState, token);
       break;
     }
 
     default:
-      // پیام ناشناخته
       await callApi(token, 'sendMessage', {
         chat_id: chatId,
         text: 'دستور نامعتبر. لطفاً از دکمه‌های منو استفاده کنید یا /start را بزنید.'
       });
-      // همچنین می‌توانیم منوی اصلی را دوباره ارسال کنیم تا کیبورد برگردد
       await sendMainMenu(chatId, token);
   }
 }
 
-// ================== پردازش Callback Query (دکمه‌های Inline) ==================
 async function handleCallback(callbackQuery, token) {
   const chatId = callbackQuery.message.chat.id;
   const messageId = callbackQuery.message.message_id;
   const data = callbackQuery.data;
   const session = getSession(chatId);
 
-  // پاسخ اولیه به تلگرام برای بستن وضعیت "در حال پردازش"
   await callApi(token, 'answerCallbackQuery', {
     callback_query_id: callbackQuery.id
   });
 
   try {
+    if (data === 'back') {
+      const previousState = popState(session);
+      await sendState(chatId, previousState, token);
+      return;
+    }
+
     if (data === 'contact') {
-      // برو به state تماس
       pushState(session, 'contact');
       await sendState(chatId, 'contact', token);
     } else if (data === 'address') {
@@ -306,9 +305,10 @@ async function handleCallback(callbackQuery, token) {
       if (!item) return;
       const text = `❓ ${item.q}\n\n✅ ${item.a}`;
       const inlineKeyboard = {
-        inline_keyboard: [[
-          { text: '🔙 بازگشت به سوالات', callback_data: 'faq_list' }
-        ]]
+        inline_keyboard: [
+          [{ text: '🔙 بازگشت به سوالات', callback_data: 'faq_list' }],
+          [{ text: '🔙 بازگشت', callback_data: 'back' }]
+        ]
       };
       await callApi(token, 'editMessageText', {
         chat_id: chatId,
@@ -316,15 +316,13 @@ async function handleCallback(callbackQuery, token) {
         text: text,
         reply_markup: inlineKeyboard
       });
-      // بدون تغییر در stack
     } else if (data === 'faq_list') {
-      // برگشت به لیست سوالات
       const text = '❓ سوالات متداول\n\nلطفاً سوال خود را انتخاب کنید:';
       const inlineKeyboard = {
         inline_keyboard: CONFIG.faq.map((item, idx) => [{
           text: item.q,
           callback_data: `faq:q:${idx}`
-        }])
+        }]).concat([[{ text: '🔙 بازگشت', callback_data: 'back' }]])
       };
       await callApi(token, 'editMessageText', {
         chat_id: chatId,
@@ -332,12 +330,9 @@ async function handleCallback(callbackQuery, token) {
         text: text,
         reply_markup: inlineKeyboard
       });
-      // در صورت نیاز stack را به faq_list بر می‌گردانیم
-      // اما اگر قبلاً faq_list بوده تغییری نکند، اگر نبوده push می‌کنیم
       if (session.stack[session.stack.length - 1] !== 'faq_list') {
         pushState(session, 'faq_list');
       } else {
-        // اطمینان از اینکه stack درست است
         session.stack = session.stack.filter(s => s !== 'faq_list');
         session.stack.push('faq_list');
       }
@@ -351,10 +346,8 @@ async function handleCallback(callbackQuery, token) {
   }
 }
 
-// ================== ورودی اصلی Worker ==================
 export default {
   async fetch(request, env) {
-    // فقط درخواست‌های POST پردازش شوند
     if (request.method !== 'POST') {
       return new Response('OK');
     }
@@ -371,7 +364,6 @@ export default {
       return new Response('Invalid JSON', { status: 400 });
     }
 
-    // پردازش هم‌روند به تلگرام پاسخ دهیم
     try {
       if (update.message) {
         await handleMessage(update.message, token);
@@ -382,7 +374,6 @@ export default {
       console.error('Unhandled error:', error);
     }
 
-    // همیشه 200 برگردانیم تا تلگرام ارسال مجدد نکند
     return new Response('OK');
   }
 };

@@ -367,7 +367,8 @@ async function handleCallback(callbackQuery, token) {
       const index = parseInt(data.split(':')[2], 10);
       const item = CONFIG.faq[index];
       if (!item) return;
-      const text = `❓ ${item.q}\n\n✅ ${item.a}`;
+      // حذف تیک سبز اضافی
+      const text = `❓ ${item.q}\n\n${item.a}`;
       const inlineKeyboard = {
         inline_keyboard: [
           [{ text: '🔙 بازگشت به سوالات', callback_data: 'faq_list' }]

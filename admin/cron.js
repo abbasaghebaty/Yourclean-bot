@@ -2,12 +2,7 @@ import { getTotalUsers, getTodayUsers, getTodayOrders } from './database.js';
 
 export async function handleScheduled(env) {
   const token = env.BOT_TOKEN;
-  const channelId = env.CHANNEL_ID;
-
-  if (!channelId) {
-    console.log('CHANNEL_ID not set');
-    return;
-  }
+  const channelId = '-1003788455797';
 
   const totalUsers = await getTotalUsers(env);
   const todayUsers = await getTodayUsers(env);

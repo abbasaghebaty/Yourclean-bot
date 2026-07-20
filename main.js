@@ -1,5 +1,5 @@
 import { handleMessage, handleCallback } from './customer/bot.js';
-import { handleAdminMessage, handleAdminCallback } from './admin/admin.js';
+import { handleAdminMessage } from './admin/admin.js';
 import { handleScheduled } from './admin/cron.js';
 
 // حداکثر درخواست روزانه برای هر کاربر عادی

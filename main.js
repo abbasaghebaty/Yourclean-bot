@@ -1,392 +1,385 @@
-/**
- * ربات تلگرامی فروشگاه شما شاپ (Shoma Shop)
- * مناسب اجرا روی Cloudflare Workers
- * نسخه ۱.۰.۰
- */
+// شما شاپ - ربات تلگرام فروشگاهی
+// قابل اجرا روی Cloudflare Workers
+// بدون نیاز به هیچ کتابخانه اضافی
 
-// ==================== تنظیمات ====================
-
-// اطلاعات فروشگاه (در صورت نیاز به تغییر، اینجا ویرایش کنید)
-const SHOP_INFO = {
-  name: "🏪 شما شاپ",
-  about: "فروشگاه شما شاپ، مرکز تخصصی محصولات شوینده، بهداشتی و مصرفی با بهترین کیفیت و قیمت. هدف ما رضایت و آسایش شماست 🛍️",
-  address: "📍 آدرس فروشگاه: ایران، تهران، خیابان نمونه، پلاک ۰۰۱", // آدرس دقیق را خودتان جایگزین کنید
-  neshanUrl: "https://nshn.ir/357b1MaUIJjDVc",
-  googleMapsUrl: "https://maps.app.goo.gl/SSvNCBAZcptxPWis8",
-  supportId: "@Shoma_shop_sup",
-  eitaa: "https://eitaa.com/shoma_shop",
-  rubika: "https://rubika.ir/shoma_shop",
-  instagram: "https://instagram.com/shoma_shop.ir",
-  website: null, // بعداً لینک سایت فعال شود (کامنت)
+// ================== تنظیمات فروشگاه (قابل تغییر) ==================
+const CONFIG = {
+  shopName: "شما شاپ",
+  address: "تهران، خیابان ولیعصر، بالاتر از پارک ساعی، پلاک ۱۲۳",
+  phone: "۰۹۱۲۳۴۵۶۷۸۹",
+  supportId: "@shoma_support",
+  eitaaUrl: "https://eitaa.com/shomashop",
+  rubikaUrl: "https://rubika.ir/shomashop",
+  instagramUrl: "https://instagram.com/shomashop",
+  neshanUrl: "https://neshan.org/maps/@...",
+  googleMapsUrl: "https://maps.google.com/?q=...",
+  aboutText: `🏪 فروشگاه شما شاپ\n\nعرضه‌کننده انواع پوشاک زنانه و مردانه با بهترین کیفیت و مناسب‌ترین قیمت.\nرضایت شما افتخار ماست.`,
+  faq: [
+    { q: "ساعات کاری فروشگاه؟", a: "شنبه تا پنجشنبه ۹ صبح تا ۹ شب، جمعه‌ها ۱۰ تا ۸ شب." },
+    { q: "روش‌های ارسال سفارش؟", a: "پست پیشتاز، تیپاکس و پیک داخل تهران." },
+    { q: "شرایط مرجوعی کالا؟", a: "تا ۷ روز پس از دریافت، در صورت سالم بودن بسته‌بندی و عدم استفاده." },
+    { q: "آیا خرید حضوری هم دارید؟", a: "بله، می‌توانید همه روزه به فروشگاه مرکزی مراجعه کنید." }
+  ]
 };
 
-// سوالات متداول (برای اضافه کردن سوال جدید، یک شیء به آرایه اضافه کنید)
-const FAQS = [
-  {
-    q: "چطور سفارش ثبت کنم؟",
-    a: "برای ثبت سفارش می‌توانید از طریق دکمه «پشتیبانی و ثبت سفارش» با ما در ارتباط باشید یا به آیدی @Shoma_shop_sup پیام دهید.",
-  },
-  {
-    q: "آیا ارسال دارید؟",
-    a: "بله، ارسال به سراسر کشور داریم. هزینه ارسال بر اساس مقصد محاسبه می‌شود.",
-  },
-  {
-    q: "چطور قیمت محصولات را ببینم؟",
-    a: "می‌توانید از طریق شبکه‌های اجتماعی و کانال‌های ما محصولات و قیمت‌ها را مشاهده کنید.",
-  },
-  {
-    q: "ساعات کاری؟",
-    a: "ساعات کاری:\nشنبه تا پنجشنبه: ۹ صبح تا ۸ شب\nجمعه‌ها: ۱۰ صبح تا ۲ بعدازظهر",
-  },
-  {
-    q: "راه ارتباطی؟",
-    a: "می‌توانید از طریق آیدی @Shoma_shop_sup در تلگرام یا دکمه پشتیبانی در ربات با ما ارتباط بگیرید.",
-  },
-];
+// ================== ذخیره‌سازی جلسات در حافظه ==================
+// در محیط serverless به صورت موقت نگهداری می‌شود.
+// برای نسخه نهایی می‌توان از KV استفاده کرد.
+const sessions = new Map();
 
-// ==================== توابع کمکی Telegram API ====================
+function getSession(chatId) {
+  if (!sessions.has(chatId)) {
+    sessions.set(chatId, { stack: ['main'] });
+  }
+  return sessions.get(chatId);
+}
 
-/**
- * ارسال درخواست به API تلگرام
- */
-async function callTelegramAPI(token, method, body = {}) {
+// ================== ابزارهای ارتباط با Telegram API ==================
+async function callApi(token, method, body) {
   const url = `https://api.telegram.org/bot${token}/${method}`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  return response.json();
-}
-
-/**
- * ارسال پیام متنی
- */
-async function sendMessage(token, chat_id, text, reply_markup = null) {
-  const body = {
-    chat_id,
-    text,
-    parse_mode: "HTML",
+  const init = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
   };
-  if (reply_markup) body.reply_markup = reply_markup;
-  return callTelegramAPI(token, "sendMessage", body);
+  const response = await fetch(url, init);
+  const data = await response.json();
+  if (!data.ok) {
+    console.error(`Telegram API error (${method}):`, data.description);
+  }
+  return data;
 }
 
-/**
- * ویرایش متن پیام
- */
-async function editMessageText(token, chat_id, message_id, text, reply_markup = null) {
-  const body = {
-    chat_id,
-    message_id,
-    text,
-    parse_mode: "HTML",
+// ================== کیبوردها ==================
+
+// کیبورد اصلی (پایین چت)
+function mainReplyKeyboard() {
+  return {
+    keyboard: [
+      [{ text: '📦 دریافت لیست محصولات' }, { text: '☎️ راه‌های ارتباطی' }],
+      [{ text: '📝 راهنمای ثبت سفارش' }],
+      [{ text: '🏪 درباره ما' }, { text: '❓ سوالات متداول' }],
+      [{ text: '🔙 بازگشت' }, { text: '🏠 منوی اصلی' }]
+    ],
+    resize_keyboard: true,
+    one_time_keyboard: false
   };
-  if (reply_markup) body.reply_markup = reply_markup;
-  return callTelegramAPI(token, "editMessageText", body);
 }
 
-/**
- * پاسخ به callback query
- */
-async function answerCallbackQuery(token, callback_query_id, text = "") {
-  return callTelegramAPI(token, "answerCallbackQuery", {
-    callback_query_id,
-    text,
+// ================== توابع ارسال / ویرایش پیام ==================
+
+async function sendMainMenu(chatId, token) {
+  const text = `🏪 به فروشگاه **${CONFIG.shopName}** خوش آمدید\n\nلطفاً گزینه مورد نظر خود را انتخاب کنید.`;
+  const replyMarkup = mainReplyKeyboard();
+  await callApi(token, 'sendMessage', {
+    chat_id: chatId,
+    text: text,
+    parse_mode: 'Markdown',
+    reply_markup: replyMarkup
   });
 }
 
-/**
- * پاسخ به inline query
- */
-async function answerInlineQuery(token, inline_query_id, results) {
-  return callTelegramAPI(token, "answerInlineQuery", {
-    inline_query_id,
-    results,
-    cache_time: 0,
-  });
-}
+async function sendState(chatId, state, token) {
+  switch (state) {
+    case 'main':
+      await sendMainMenu(chatId, token);
+      break;
 
-// ==================== کیبوردهای شیشه‌ای (Inline Keyboard) ====================
-
-// منوی اصلی
-function mainMenuKeyboard() {
-  return {
-    inline_keyboard: [
-      [{ text: "🏪 درباره ما", callback_data: "about" }],
-      [{ text: "📍 آدرس فروشگاه", callback_data: "address" }],
-      [{ text: "📢 شبکه‌های اجتماعی", callback_data: "social" }],
-      [{ text: "☎️ پشتیبانی و ثبت سفارش", callback_data: "support" }],
-      [{ text: "❓ سوالات متداول", callback_data: "faq" }],
-      // بعداً لینک سایت فعال شود
-      // وقتی خواستید سایت را فعال کنید، کامنت خط زیر را بردارید و یک URL معتبر بدهید
-      // [{ text: "🌐 سایت", url: "https://shomashop.ir" }],
-      [{ text: "🌐 سایت (غیرفعال)", callback_data: "website" }],
-    ],
-  };
-}
-
-// کیبورد بخش آدرس
-function addressKeyboard() {
-  return {
-    inline_keyboard: [
-      [
-        { text: "🗺️ باز کردن در نشان", url: SHOP_INFO.neshanUrl },
-        { text: "📍 باز کردن در گوگل مپ", url: SHOP_INFO.googleMapsUrl },
-      ],
-      [{ text: "🔙 بازگشت به منوی اصلی", callback_data: "back_main" }],
-    ],
-  };
-}
-
-// کیبورد شبکه‌های اجتماعی
-function socialKeyboard() {
-  return {
-    inline_keyboard: [
-      [{ text: "📱 ایتا", url: SHOP_INFO.eitaa }],
-      [{ text: "📱 روبیکا", url: SHOP_INFO.rubika }],
-      [{ text: "📸 اینستاگرام", url: SHOP_INFO.instagram }],
-      [{ text: "🔙 بازگشت به منوی اصلی", callback_data: "back_main" }],
-    ],
-  };
-}
-
-// کیبورد پشتیبانی (نمایش اطلاعات و لینک به اکانت پشتیبانی)
-function supportKeyboard() {
-  return {
-    inline_keyboard: [
-      [{ text: "💬 ارسال پیام به پشتیبانی", url: `https://t.me/${SHOP_INFO.supportId.replace("@", "")}` }],
-      [{ text: "🔙 بازگشت به منوی اصلی", callback_data: "back_main" }],
-    ],
-  };
-}
-
-// کیبورد لیست سوالات FAQ
-function faqListKeyboard() {
-  const buttons = FAQS.map((faq, index) => [
-    { text: faq.q, callback_data: `faq_${index}` },
-  ]);
-  buttons.push([{ text: "🔙 بازگشت به منوی اصلی", callback_data: "back_main" }]);
-  return { inline_keyboard: buttons };
-}
-
-// کیبورد بازگشت به لیست FAQ
-function backToFaqKeyboard() {
-  return {
-    inline_keyboard: [
-      [{ text: "🔙 بازگشت به سوالات", callback_data: "faq" }],
-      [{ text: "🏠 منوی اصلی", callback_data: "back_main" }],
-    ],
-  };
-}
-
-// کیبورد برای پیام "بعداً فعال می‌شود"
-function backToMainKeyboard() {
-  return {
-    inline_keyboard: [
-      [{ text: "🔙 بازگشت به منوی اصلی", callback_data: "back_main" }],
-    ],
-  };
-}
-
-// ==================== هندلرهای اصلی ====================
-
-// هندلر فرمان /start (نمایش منوی اصلی)
-async function handleStart(chat_id, token) {
-  const text = `🏪 به فروشگاه <b>شما شاپ</b> خوش آمدید!\n\nلطفاً از منوی زیر گزینه مورد نظر خود را انتخاب کنید:`;
-  await sendMessage(token, chat_id, text, mainMenuKeyboard());
-}
-
-// هندلر callback query (دکمه‌های شیشه‌ای)
-async function handleCallback(callback_query, token) {
-  const { id, data, message } = callback_query;
-  const chat_id = message.chat.id;
-  const message_id = message.message_id;
-
-  // پاسخ فوری برای بستن حالت بارگذاری
-  await answerCallbackQuery(token, id);
-
-  try {
-    switch (data) {
-      case "about":
-        await editMessageText(
-          token,
-          chat_id,
-          message_id,
-          `🏪 <b>درباره ما</b>\n\n${SHOP_INFO.about}`,
-          backToMainKeyboard()
-        );
-        break;
-
-      case "address":
-        await editMessageText(
-          token,
-          chat_id,
-          message_id,
-          `📍 <b>آدرس فروشگاه</b>\n\n${SHOP_INFO.address}\n\nبرای مسیریابی یکی از گزینه‌های زیر را انتخاب کنید:`,
-          addressKeyboard()
-        );
-        break;
-
-      case "social":
-        await editMessageText(
-          token,
-          chat_id,
-          message_id,
-          `📢 <b>شبکه‌های اجتماعی شما شاپ</b>\n\nاز طریق لینک‌های زیر ما را دنبال کنید:`,
-          socialKeyboard()
-        );
-        break;
-
-      case "support":
-        await editMessageText(
-          token,
-          chat_id,
-          message_id,
-          `☎️ <b>پشتیبانی و ثبت سفارش</b>\n\nبرای ارتباط مستقیم با پشتیبانی روی دکمه زیر کلیک کنید.\nآیدی: ${SHOP_INFO.supportId}`,
-          supportKeyboard()
-        );
-        break;
-
-      case "faq":
-        await editMessageText(
-          token,
-          chat_id,
-          message_id,
-          "❓ <b>سوالات متداول</b>\n\nلطفاً سوال خود را انتخاب کنید:",
-          faqListKeyboard()
-        );
-        break;
-
-      case "website":
-        // بعداً لینک سایت فعال شود
-        await editMessageText(
-          token,
-          chat_id,
-          message_id,
-          "🌐 بخش سایت در حال حاضر غیرفعال است و به‌زودی فعال خواهد شد.",
-          backToMainKeyboard()
-        );
-        break;
-
-      case "back_main":
-        await editMessageText(
-          token,
-          chat_id,
-          message_id,
-          "🏪 <b>منوی اصلی</b>\n\nلطفاً گزینه مورد نظر را انتخاب کنید:",
-          mainMenuKeyboard()
-        );
-        break;
-
-      default:
-        // بررسی سوالات FAQ با فرمت faq_0, faq_1, ...
-        if (data.startsWith("faq_")) {
-          const index = parseInt(data.split("_")[1]);
-          if (index >= 0 && index < FAQS.length) {
-            const faq = FAQS[index];
-            await editMessageText(
-              token,
-              chat_id,
-              message_id,
-              `❓ <b>${faq.q}</b>\n\n${faq.a}`,
-              backToFaqKeyboard()
-            );
-          }
-        } else {
-          // داده ناشناخته
-          await editMessageText(
-            token,
-            chat_id,
-            message_id,
-            "⚠️ گزینه نامعتبر. لطفاً به منوی اصلی بازگردید.",
-            backToMainKeyboard()
-          );
-        }
+    case 'products': {
+      const text = 'برای مشاهده لیست محصولات، عکس‌ها و قیمت‌های به‌روز می‌توانید عضو کانال‌های ما شوید.';
+      const inlineKeyboard = {
+        inline_keyboard: [
+          [
+            { text: '📱 ایتا', url: CONFIG.eitaaUrl },
+            { text: '📱 روبیکا', url: CONFIG.rubikaUrl }
+          ],
+          [{ text: '📸 اینستاگرام', url: CONFIG.instagramUrl }]
+        ]
+      };
+      await callApi(token, 'sendMessage', {
+        chat_id: chatId,
+        text: text,
+        reply_markup: inlineKeyboard
+      });
+      break;
     }
-  } catch (error) {
-    console.error("Error in callback:", error);
+
+    case 'guide': {
+      const text = `📝 راهنمای ثبت سفارش\n\nابتدا محصولات و قیمت‌های به‌روز را از کانال‌های ما مشاهده کنید.\nپس از انتخاب کالا، برای ثبت سفارش از طریق راه‌های ارتباطی با ما تماس بگیرید.\nبا افتخار پاسخگوی شما هستیم.`;
+      const inlineKeyboard = {
+        inline_keyboard: [
+          [
+            { text: '📱 ایتا', url: CONFIG.eitaaUrl },
+            { text: '📱 روبیکا', url: CONFIG.rubikaUrl }
+          ],
+          [{ text: '☎️ راه‌های ارتباطی', callback_data: 'contact' }]
+        ]
+      };
+      await callApi(token, 'sendMessage', {
+        chat_id: chatId,
+        text: text,
+        reply_markup: inlineKeyboard
+      });
+      break;
+    }
+
+    case 'contact': {
+      const text = '☎️ راه‌های ارتباطی\n\nیکی از گزینه‌های زیر را انتخاب کنید:';
+      const inlineKeyboard = {
+        inline_keyboard: [
+          [{ text: '📍 آدرس فروشگاه', callback_data: 'address' }],
+          [{ text: '📞 شماره تماس و پشتیبانی', callback_data: 'phone' }]
+        ]
+      };
+      await callApi(token, 'sendMessage', {
+        chat_id: chatId,
+        text: text,
+        reply_markup: inlineKeyboard
+      });
+      break;
+    }
+
+    case 'address': {
+      const text = `📍 آدرس فروشگاه\n\nآدرس فروشگاه:\n${CONFIG.address}\n\nبرای مسیریابی یکی از گزینه‌های زیر را انتخاب کنید:`;
+      const inlineKeyboard = {
+        inline_keyboard: [
+          [
+            { text: '🗺 مسیریابی در نشان', url: CONFIG.neshanUrl },
+            { text: '📍 مسیریابی در گوگل مپ', url: CONFIG.googleMapsUrl }
+          ]
+        ]
+      };
+      await callApi(token, 'sendMessage', {
+        chat_id: chatId,
+        text: text,
+        reply_markup: inlineKeyboard
+      });
+      break;
+    }
+
+    case 'phone': {
+      const text = `📞 تماس و پشتیبانی\n\nشماره تماس:\n${CONFIG.phone}\n\nآیدی پشتیبانی:\n${CONFIG.supportId}`;
+      await callApi(token, 'sendMessage', {
+        chat_id: chatId,
+        text: text
+        // بدون inline keyboard
+      });
+      break;
+    }
+
+    case 'about': {
+      const text = CONFIG.aboutText;
+      await callApi(token, 'sendMessage', {
+        chat_id: chatId,
+        text: text
+      });
+      break;
+    }
+
+    case 'faq_list': {
+      const text = '❓ سوالات متداول\n\nلطفاً سوال خود را انتخاب کنید:';
+      const inlineKeyboard = {
+        inline_keyboard: CONFIG.faq.map((item, idx) => [{
+          text: item.q,
+          callback_data: `faq:q:${idx}`
+        }])
+      };
+      await callApi(token, 'sendMessage', {
+        chat_id: chatId,
+        text: text,
+        reply_markup: inlineKeyboard
+      });
+      break;
+    }
+
+    default:
+      // در صورت نامعتبر بودن state، به منوی اصلی برگردان
+      await sendMainMenu(chatId, token);
   }
 }
 
-// هندلر Inline Query (جستجوی درون خطی)
-async function handleInlineQuery(inline_query, token) {
-  const query = inline_query.query.trim();
+// ================== مدیریت ناوبری ==================
+function pushState(session, newState) {
+  session.stack.push(newState);
+}
 
-  // فقط اگر کاربر دقیقاً "آدرس" را تایپ کند (یا می‌توانید شرط را تغییر دهید)
-  if (query === "آدرس") {
-    const result = {
-      type: "article",
-      id: "1",
-      title: "📍 آدرس فروشگاه شما شاپ",
-      description: "آدرس و مسیریابی فروشگاه",
-      input_message_content: {
-        message_text: `🏪 <b>فروشگاه شما شاپ</b>\n\n${SHOP_INFO.address}\n\nبرای مسیریابی از دکمه‌های زیر استفاده کنید:`,
-        parse_mode: "HTML",
-      },
-      reply_markup: {
-        inline_keyboard: [
-          [
-            { text: "🗺️ باز کردن در نشان", url: SHOP_INFO.neshanUrl },
-            { text: "📍 باز کردن در گوگل مپ", url: SHOP_INFO.googleMapsUrl },
-          ],
-          [{ text: "💬 پشتیبانی", url: `https://t.me/${SHOP_INFO.supportId.replace("@", "")}` }],
-        ],
-      },
-    };
+function popState(session) {
+  if (session.stack.length > 1) {
+    session.stack.pop();
+    return session.stack[session.stack.length - 1];
+  }
+  return 'main';
+}
 
-    await answerInlineQuery(token, inline_query.id, [result]);
-  } else {
-    // اگر کلمه دیگری تایپ شود، نتیجه خالی یا یک پیام راهنما
-    await answerInlineQuery(token, inline_query.id, [], {
-      switch_pm_text: "راهنمای ربات",
-      switch_pm_parameter: "start",
+// ================== پردازش پیام‌های متنی ==================
+async function handleMessage(message, token) {
+  const chatId = message.chat.id;
+  const text = message.text || '';
+  const session = getSession(chatId);
+
+  // مدیریت دستور /start
+  if (text === '/start') {
+    session.stack = ['main'];
+    await sendMainMenu(chatId, token);
+    return;
+  }
+
+  // کلیک روی دکمه‌های Reply Keyboard (متنی)
+  switch (text) {
+    case '🏠 منوی اصلی':
+      session.stack = ['main'];
+      await sendMainMenu(chatId, token);
+      break;
+
+    case '📦 دریافت لیست محصولات':
+      pushState(session, 'products');
+      await sendState(chatId, 'products', token);
+      break;
+
+    case '☎️ راه‌های ارتباطی':
+      pushState(session, 'contact');
+      await sendState(chatId, 'contact', token);
+      break;
+
+    case '📝 راهنمای ثبت سفارش':
+      pushState(session, 'guide');
+      await sendState(chatId, 'guide', token);
+      break;
+
+    case '🏪 درباره ما':
+      pushState(session, 'about');
+      await sendState(chatId, 'about', token);
+      break;
+
+    case '❓ سوالات متداول':
+      pushState(session, 'faq_list');
+      await sendState(chatId, 'faq_list', token);
+      break;
+
+    case '🔙 بازگشت': {
+      const previousState = popState(session);
+      // ارسال پیام جدید برای حالت قبلی
+      await sendState(chatId, previousState, token);
+      break;
+    }
+
+    default:
+      // پیام ناشناخته
+      await callApi(token, 'sendMessage', {
+        chat_id: chatId,
+        text: 'دستور نامعتبر. لطفاً از دکمه‌های منو استفاده کنید یا /start را بزنید.'
+      });
+      // همچنین می‌توانیم منوی اصلی را دوباره ارسال کنیم تا کیبورد برگردد
+      await sendMainMenu(chatId, token);
+  }
+}
+
+// ================== پردازش Callback Query (دکمه‌های Inline) ==================
+async function handleCallback(callbackQuery, token) {
+  const chatId = callbackQuery.message.chat.id;
+  const messageId = callbackQuery.message.message_id;
+  const data = callbackQuery.data;
+  const session = getSession(chatId);
+
+  // پاسخ اولیه به تلگرام برای بستن وضعیت "در حال پردازش"
+  await callApi(token, 'answerCallbackQuery', {
+    callback_query_id: callbackQuery.id
+  });
+
+  try {
+    if (data === 'contact') {
+      // برو به state تماس
+      pushState(session, 'contact');
+      await sendState(chatId, 'contact', token);
+    } else if (data === 'address') {
+      pushState(session, 'address');
+      await sendState(chatId, 'address', token);
+    } else if (data === 'phone') {
+      pushState(session, 'phone');
+      await sendState(chatId, 'phone', token);
+    } else if (data.startsWith('faq:q:')) {
+      const index = parseInt(data.split(':')[2], 10);
+      const item = CONFIG.faq[index];
+      if (!item) return;
+      const text = `❓ ${item.q}\n\n✅ ${item.a}`;
+      const inlineKeyboard = {
+        inline_keyboard: [[
+          { text: '🔙 بازگشت به سوالات', callback_data: 'faq_list' }
+        ]]
+      };
+      await callApi(token, 'editMessageText', {
+        chat_id: chatId,
+        message_id: messageId,
+        text: text,
+        reply_markup: inlineKeyboard
+      });
+      // بدون تغییر در stack
+    } else if (data === 'faq_list') {
+      // برگشت به لیست سوالات
+      const text = '❓ سوالات متداول\n\nلطفاً سوال خود را انتخاب کنید:';
+      const inlineKeyboard = {
+        inline_keyboard: CONFIG.faq.map((item, idx) => [{
+          text: item.q,
+          callback_data: `faq:q:${idx}`
+        }])
+      };
+      await callApi(token, 'editMessageText', {
+        chat_id: chatId,
+        message_id: messageId,
+        text: text,
+        reply_markup: inlineKeyboard
+      });
+      // در صورت نیاز stack را به faq_list بر می‌گردانیم
+      // اما اگر قبلاً faq_list بوده تغییری نکند، اگر نبوده push می‌کنیم
+      if (session.stack[session.stack.length - 1] !== 'faq_list') {
+        pushState(session, 'faq_list');
+      } else {
+        // اطمینان از اینکه stack درست است
+        session.stack = session.stack.filter(s => s !== 'faq_list');
+        session.stack.push('faq_list');
+      }
+    }
+  } catch (error) {
+    console.error('Callback error:', error);
+    await callApi(token, 'sendMessage', {
+      chat_id: chatId,
+      text: 'متأسفانه خطایی رخ داد. لطفاً دوباره تلاش کنید یا /start را بزنید.'
     });
   }
 }
 
-// هندلر پیام‌های متنی ناشناخته
-async function handleUnknownMessage(chat_id, token) {
-  const text = "⚠️ دستور نامعتبر!\n\nلطفاً از منوی زیر استفاده کنید یا /start را بزنید.";
-  await sendMessage(token, chat_id, text, mainMenuKeyboard());
-}
-
-// ==================== Webhook Handler ====================
-
-async function handleUpdate(update, token) {
-  if (update.message) {
-    const message = update.message;
-    if (message.text && message.text.startsWith("/start")) {
-      await handleStart(message.chat.id, token);
-    } else {
-      await handleUnknownMessage(message.chat.id, token);
-    }
-  } else if (update.callback_query) {
-    await handleCallback(update.callback_query, token);
-  } else if (update.inline_query) {
-    await handleInlineQuery(update.inline_query, token);
-  }
-}
-
-// ==================== Worker Entry Point ====================
-
+// ================== ورودی اصلی Worker ==================
 export default {
-  async fetch(request, env, ctx) {
-    // فقط درخواست‌های POST پردازش می‌شوند
-    if (request.method !== "POST") {
-      return new Response("OK", { status: 200 });
+  async fetch(request, env) {
+    // فقط درخواست‌های POST پردازش شوند
+    if (request.method !== 'POST') {
+      return new Response('OK');
     }
 
+    const token = env.BOT_TOKEN;
+    if (!token) {
+      return new Response('BOT_TOKEN is not set in environment variables.', { status: 500 });
+    }
+
+    let update;
     try {
-      const update = await request.json();
-      const token = env.BOT_TOKEN; // توکن از متغیر محیطی خوانده می‌شود
-
-      await handleUpdate(update, token);
-    } catch (error) {
-      console.error("Worker Error:", error);
+      update = await request.json();
+    } catch (e) {
+      return new Response('Invalid JSON', { status: 400 });
     }
 
-    // همیشه پاسخ مثبت بدهیم تا تلگرام دوباره تلاش نکند
-    return new Response("OK", { status: 200 });
-  },
+    // پردازش هم‌روند به تلگرام پاسخ دهیم
+    try {
+      if (update.message) {
+        await handleMessage(update.message, token);
+      } else if (update.callback_query) {
+        await handleCallback(update.callback_query, token);
+      }
+    } catch (error) {
+      console.error('Unhandled error:', error);
+    }
+
+    // همیشه 200 برگردانیم تا تلگرام ارسال مجدد نکند
+    return new Response('OK');
+  }
 };

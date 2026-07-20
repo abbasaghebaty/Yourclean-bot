@@ -8,18 +8,23 @@ const CONFIG = {
   instagramUrl: "https://instagram.com/shoma_shop.ir",
   neshanUrl: "https://nshn.ir/35Qb1MaUIJjDVc",
   googleMapsUrl: "https://maps.app.goo.gl/Haixv2k28U9JJi878",
-  aboutText: `🏪 فروشگاه شما شاپ\n\nعرضه‌کننده انواع محصولات شوینده، بهداشتی و مصرفی با بهترین کیفیت و مناسب‌ترین قیمت.\nرضایت شما افتخار ماست.`,
+  aboutText: `🏪 <b>درباره فروشگاه شما شاپ</b>\n\nفروشگاه <b>شما شاپ</b> از <b>۱۴۰۵/۰۳/۰۱</b> با هدف ارائه محصولات شوینده، بهداشتی و مصرفی با <b>کیفیت تضمین‌شده</b> و <b>قیمت منصفانه</b> فعالیت خود را آغاز کرده است.\n\nاعتماد و رضایت شما، ارزشمندترین سرمایه ماست.`,
   faq: [
     {
       q: "ساعات کاری فروشگاه؟",
       a: `شنبه تا پنجشنبه
-از ساعت ۹ تا ۱۴ و ۱۷تا ۲۲`
+از ساعت ۹ تا ۱۴
+۱۷ تا ۲۲`
     },
     {
       q: "روش‌های ارسال سفارش؟",
       a: `ارسال رایگان در محدوده
 ارسال درون شهری با اسنپ باکس
 و سراسر کشور با پست پیشتاز`
+    },
+    {
+      q: "اگر کالای مورد نظرم موجود نبود چه می‌شود؟",
+      a: `در صورتی که کالای مورد نظر شما موجود نباشد، لطفاً آن را با ما در میان بگذارید تا در سریع‌ترین زمان ممکن برای تهیه و موجود کردن آن اقدام کنیم.`
     }
   ]
 };
@@ -62,7 +67,10 @@ function mainReplyKeyboard() {
 }
 
 async function sendMainMenu(chatId, token) {
-  const text = `🏪 به فروشگاه ${CONFIG.shopName} خوش آمدید\n\nلطفاً گزینه مورد نظر خود را انتخاب کنید.`;
+  const text = `🏪 به ${CONFIG.shopName} خوش آمدید
+
+🛍️ کیفیت، قیمت مناسب و خریدی مطمئن
+لطفاً یکی از گزینه‌های زیر را انتخاب کنید.`;
   const replyMarkup = mainReplyKeyboard();
   await callApi(token, 'sendMessage', {
     chat_id: chatId,
@@ -97,7 +105,7 @@ async function sendState(chatId, state, token) {
     }
 
     case 'guide': {
-      const text = `📝 راهنمای ثبت سفارش\n\nابتدا محصولات و قیمت‌های به‌روز را از کانال‌های ما مشاهده کنید.\nپس از انتخاب کالا، برای ثبت سفارش از طریق راه‌های ارتباطی با ما تماس بگیرید.\nبا افتخار پاسخگوی شما هستیم.`;
+      const text = `📝 <b>راهنمای ثبت سفارش</b>\n\nابتدا محصولات و قیمت‌های <b>به‌روز</b> را از <b>کانال‌های ما</b> مشاهده کنید.\nپس از انتخاب کالا، برای ثبت سفارش از طریق <b>راه‌های ارتباطی</b> با ما تماس بگیرید.\nبا افتخار پاسخگوی شما هستیم.`;
       const inlineKeyboard = {
         inline_keyboard: [
           [
@@ -108,10 +116,11 @@ async function sendState(chatId, state, token) {
         ]
       };
       await callApi(token, 'sendMessage', {
-        chat_id: chatId,
-        text: text,
-        reply_markup: inlineKeyboard
-      });
+  chat_id: chatId,
+  text: text,
+  parse_mode: 'HTML',
+  reply_markup: replyMarkup
+});
       break;
     }
 
@@ -151,15 +160,9 @@ async function sendState(chatId, state, token) {
 
     case 'phone': {
       const text = `📞 تماس و پشتیبانی\n\nشماره تماس:\n${CONFIG.phone}\n\nآیدی پشتیبانی:\n${CONFIG.supportId}`;
-      const inlineKeyboard = {
-        inline_keyboard: [
-          [{ text: `📞 تماس با ${CONFIG.phone}`, url: `tel:${CONFIG.phone}` }]
-        ]
-      };
       await callApi(token, 'sendMessage', {
         chat_id: chatId,
-        text: text,
-        reply_markup: inlineKeyboard
+        text: text
       });
       break;
     }
@@ -232,16 +235,10 @@ async function editState(chatId, messageId, state, token) {
     }
     case 'phone': {
       const text = `📞 تماس و پشتیبانی\n\nشماره تماس:\n${CONFIG.phone}\n\nآیدی پشتیبانی:\n${CONFIG.supportId}`;
-      const inlineKeyboard = {
-        inline_keyboard: [
-          [{ text: `📞 تماس با ${CONFIG.phone}`, url: `tel:${CONFIG.phone}` }]
-        ]
-      };
       await callApi(token, 'editMessageText', {
         chat_id: chatId,
         message_id: messageId,
-        text: text,
-        reply_markup: inlineKeyboard
+        text: text
       });
       break;
     }

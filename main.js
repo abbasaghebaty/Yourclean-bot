@@ -1,4 +1,5 @@
-import { handleMessage, handleCallback } from './bot.js';
+import { handleMessage, handleCallback } from './customer/bot.js';
+import { handleAdminMessage, handleAdminCallback } from './admin/admin.js';
 
 export default {
   async fetch(request, env) {
@@ -18,11 +19,23 @@ export default {
       return new Response('Invalid JSON', { status: 400 });
     }
 
+    const ADMIN_ID = env.ADMIN_ID ? parseInt(env.ADMIN_ID) : null;
+
     try {
       if (update.message) {
-        await handleMessage(update.message, token, env);
+        const userId = update.message.from.id;
+        if (ADMIN_ID && userId === ADMIN_ID) {
+          await handleAdminMessage(update.message, token, env);
+        } else {
+          await handleMessage(update.message, token, env);
+        }
       } else if (update.callback_query) {
-        await handleCallback(update.callback_query, token);
+        const userId = update.callback_query.from.id;
+        if (ADMIN_ID && userId === ADMIN_ID) {
+          await handleAdminCallback(update.callback_query, token, env);
+        } else {
+          await handleCallback(update.callback_query, token);
+        }
       }
     } catch (error) {
       console.error('Unhandled error:', error);

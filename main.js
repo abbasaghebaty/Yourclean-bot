@@ -168,13 +168,14 @@ async function sendState(chatId, state, token) {
     }
 
     case 'about': {
-      const text = CONFIG.aboutText;
-      await callApi(token, 'sendMessage', {
-        chat_id: chatId,
-        text: text
-      });
-      break;
-    }
+  const text = CONFIG.aboutText;
+  await callApi(token, 'sendMessage', {
+    chat_id: chatId,
+    text: text,
+    parse_mode: 'HTML'
+  });
+  break;
+}
 
     case 'faq_list': {
       const text = '❓ سوالات متداول\n\nلطفاً سوال خود را انتخاب کنید:';
@@ -185,10 +186,11 @@ async function sendState(chatId, state, token) {
         }])
       };
       await callApi(token, 'sendMessage', {
-        chat_id: chatId,
-        text: text,
-        reply_markup: inlineKeyboard
-      });
+  chat_id: chatId,
+  text: text,
+  parse_mode: 'HTML',
+  reply_markup: inlineKeyboard
+});
       break;
     }
 

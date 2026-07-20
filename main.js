@@ -151,9 +151,15 @@ async function sendState(chatId, state, token) {
 
     case 'phone': {
       const text = `📞 تماس و پشتیبانی\n\nشماره تماس:\n${CONFIG.phone}\n\nآیدی پشتیبانی:\n${CONFIG.supportId}`;
+      const inlineKeyboard = {
+        inline_keyboard: [
+          [{ text: `📞 تماس با ${CONFIG.phone}`, url: `tel:${CONFIG.phone}` }]
+        ]
+      };
       await callApi(token, 'sendMessage', {
         chat_id: chatId,
-        text: text
+        text: text,
+        reply_markup: inlineKeyboard
       });
       break;
     }
@@ -268,6 +274,12 @@ async function handleCallback(callbackQuery, token) {
   });
 
   try {
+    // حذف پیام قبلی برای جلوگیری از نمایش برچسب "ویرایش شده"
+    await callApi(token, 'deleteMessage', {
+      chat_id: chatId,
+      message_id: messageId
+    });
+
     if (data === 'contact') {
       pushState(session, 'contact');
       await sendState(chatId, 'contact', token);
@@ -287,32 +299,20 @@ async function handleCallback(callbackQuery, token) {
           [{ text: '🔙 بازگشت به سوالات', callback_data: 'faq_list' }]
         ]
       };
-      await callApi(token, 'editMessageText', {
+      await callApi(token, 'sendMessage', {
         chat_id: chatId,
-        message_id: messageId,
         text: text,
         reply_markup: inlineKeyboard
       });
     } else if (data === 'faq_list') {
-      const text = '❓ سوالات متداول\n\nلطفاً سوال خود را انتخاب کنید:';
-      const inlineKeyboard = {
-        inline_keyboard: CONFIG.faq.map((item, idx) => [{
-          text: item.q,
-          callback_data: `faq:q:${idx}`
-        }])
-      };
-      await callApi(token, 'editMessageText', {
-        chat_id: chatId,
-        message_id: messageId,
-        text: text,
-        reply_markup: inlineKeyboard
-      });
+      // اطمینان از اینکه stack شامل faq_list باشد
       if (session.stack[session.stack.length - 1] !== 'faq_list') {
         pushState(session, 'faq_list');
       } else {
         session.stack = session.stack.filter(s => s !== 'faq_list');
         session.stack.push('faq_list');
       }
+      await sendState(chatId, 'faq_list', token);
     }
   } catch (error) {
     console.error('Callback error:', error);

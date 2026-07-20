@@ -36,6 +36,7 @@ export async function handleAdminMessage(message, token, env) {
   const chatId = message.chat.id;
   const text = message.text || '';
 
+  // اگه /admin زد، مستقیم منو رو نشون بده
   if (text === '/admin') {
     setAdminSession(chatId, { state: 'main' });
     await sendAdminMenu(chatId, token);
@@ -44,14 +45,8 @@ export async function handleAdminMessage(message, token, env) {
 
   const session = getAdminSession(chatId);
 
-  if (!session || session.state !== 'awaiting_broadcast_message') {
-    // ادمین توی پنل نیست، بفرست به بخش مشتری
-    const { handleMessage } = await import('../customer/bot.js');
-    await handleMessage(message, token, env);
-    return;
-  }
-
-  if (session.state === 'awaiting_broadcast_message') {
+  // اگه توی حالت انتظار برای پیام همگانیه
+  if (session && session.state === 'awaiting_broadcast_message') {
     setAdminSession(chatId, { state: 'main' });
     await callApi(token, 'sendMessage', {
       chat_id: chatId,
@@ -63,7 +58,12 @@ export async function handleAdminMessage(message, token, env) {
       text: `✅ ارسال به ${success} نفر\n❌ ناموفق: ${fail}`
     });
     await sendAdminMenu(chatId, token);
+    return;
   }
+
+  // در غیر این صورت بفرست به ربات مشتری
+  const { handleMessage: customerHandleMessage } = await import('../customer/bot.js');
+  await customerHandleMessage(message, token, env);
 }
 
 export async function handleAdminCallback(callbackQuery, token, env) {

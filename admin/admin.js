@@ -36,7 +36,6 @@ export async function handleAdminMessage(message, token, env) {
   const chatId = message.chat.id;
   const text = message.text || '';
 
-  // اگه /admin زد، مستقیم منو رو نشون بده
   if (text === '/admin') {
     setAdminSession(chatId, { state: 'main' });
     await sendAdminMenu(chatId, token);
@@ -45,7 +44,6 @@ export async function handleAdminMessage(message, token, env) {
 
   const session = getAdminSession(chatId);
 
-  // اگه توی حالت انتظار برای پیام همگانیه
   if (session && session.state === 'awaiting_broadcast_message') {
     setAdminSession(chatId, { state: 'main' });
     await callApi(token, 'sendMessage', {
@@ -61,7 +59,6 @@ export async function handleAdminMessage(message, token, env) {
     return;
   }
 
-  // در غیر این صورت بفرست به ربات مشتری
   const { handleMessage: customerHandleMessage } = await import('../customer/bot.js');
   await customerHandleMessage(message, token, env);
 }

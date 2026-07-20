@@ -85,8 +85,7 @@ async function sendState(chatId, state, token) {
             { text: '📱 ایتا', url: CONFIG.eitaaUrl },
             { text: '📱 روبیکا', url: CONFIG.rubikaUrl }
           ],
-          [{ text: '📸 اینستاگرام', url: CONFIG.instagramUrl }],
-          [{ text: '🔙 بازگشت', callback_data: 'back' }]
+          [{ text: '📸 اینستاگرام', url: CONFIG.instagramUrl }]
         ]
       };
       await callApi(token, 'sendMessage', {
@@ -105,8 +104,7 @@ async function sendState(chatId, state, token) {
             { text: '📱 ایتا', url: CONFIG.eitaaUrl },
             { text: '📱 روبیکا', url: CONFIG.rubikaUrl }
           ],
-          [{ text: '☎️ راه‌های ارتباطی', callback_data: 'contact' }],
-          [{ text: '🔙 بازگشت', callback_data: 'back' }]
+          [{ text: '☎️ راه‌های ارتباطی', callback_data: 'contact' }]
         ]
       };
       await callApi(token, 'sendMessage', {
@@ -122,8 +120,7 @@ async function sendState(chatId, state, token) {
       const inlineKeyboard = {
         inline_keyboard: [
           [{ text: '📍 آدرس فروشگاه', callback_data: 'address' }],
-          [{ text: '📞 شماره تماس و پشتیبانی', callback_data: 'phone' }],
-          [{ text: '🔙 بازگشت', callback_data: 'back' }]
+          [{ text: '📞 شماره تماس و پشتیبانی', callback_data: 'phone' }]
         ]
       };
       await callApi(token, 'sendMessage', {
@@ -141,8 +138,7 @@ async function sendState(chatId, state, token) {
           [
             { text: '🗺 مسیریابی در نشان', url: CONFIG.neshanUrl },
             { text: '📍 مسیریابی در گوگل مپ', url: CONFIG.googleMapsUrl }
-          ],
-          [{ text: '🔙 بازگشت', callback_data: 'back' }]
+          ]
         ]
       };
       await callApi(token, 'sendMessage', {
@@ -155,30 +151,18 @@ async function sendState(chatId, state, token) {
 
     case 'phone': {
       const text = `📞 تماس و پشتیبانی\n\nشماره تماس:\n${CONFIG.phone}\n\nآیدی پشتیبانی:\n${CONFIG.supportId}`;
-      const inlineKeyboard = {
-        inline_keyboard: [
-          [{ text: '🔙 بازگشت', callback_data: 'back' }]
-        ]
-      };
       await callApi(token, 'sendMessage', {
         chat_id: chatId,
-        text: text,
-        reply_markup: inlineKeyboard
+        text: text
       });
       break;
     }
 
     case 'about': {
       const text = CONFIG.aboutText;
-      const inlineKeyboard = {
-        inline_keyboard: [
-          [{ text: '🔙 بازگشت', callback_data: 'back' }]
-        ]
-      };
       await callApi(token, 'sendMessage', {
         chat_id: chatId,
-        text: text,
-        reply_markup: inlineKeyboard
+        text: text
       });
       break;
     }
@@ -189,7 +173,7 @@ async function sendState(chatId, state, token) {
         inline_keyboard: CONFIG.faq.map((item, idx) => [{
           text: item.q,
           callback_data: `faq:q:${idx}`
-        }]).concat([[{ text: '🔙 بازگشت', callback_data: 'back' }]])
+        }])
       };
       await callApi(token, 'sendMessage', {
         chat_id: chatId,
@@ -284,12 +268,6 @@ async function handleCallback(callbackQuery, token) {
   });
 
   try {
-    if (data === 'back') {
-      const previousState = popState(session);
-      await sendState(chatId, previousState, token);
-      return;
-    }
-
     if (data === 'contact') {
       pushState(session, 'contact');
       await sendState(chatId, 'contact', token);
@@ -306,8 +284,7 @@ async function handleCallback(callbackQuery, token) {
       const text = `❓ ${item.q}\n\n✅ ${item.a}`;
       const inlineKeyboard = {
         inline_keyboard: [
-          [{ text: '🔙 بازگشت به سوالات', callback_data: 'faq_list' }],
-          [{ text: '🔙 بازگشت', callback_data: 'back' }]
+          [{ text: '🔙 بازگشت به سوالات', callback_data: 'faq_list' }]
         ]
       };
       await callApi(token, 'editMessageText', {
@@ -322,7 +299,7 @@ async function handleCallback(callbackQuery, token) {
         inline_keyboard: CONFIG.faq.map((item, idx) => [{
           text: item.q,
           callback_data: `faq:q:${idx}`
-        }]).concat([[{ text: '🔙 بازگشت', callback_data: 'back' }]])
+        }])
       };
       await callApi(token, 'editMessageText', {
         chat_id: chatId,

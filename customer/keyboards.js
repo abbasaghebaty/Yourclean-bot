@@ -69,7 +69,18 @@ export function faqListKeyboard(faq) {
 export function faqDetailKeyboard() {
   return {
     inline_keyboard: [
-      [{ text: '🔙 بازگشت به سوالات', callback_data: 'faq_list' }]
+      [{ text: '🔙 بازگشت به سوالات', callback_data: 'faq_list' }],
+      [{ text: '🏠 منوی اصلی', callback_data: 'main_menu' }]
+    ]
+  };
+}
+
+export function faqContactKeyboard() {
+  return {
+    inline_keyboard: [
+      [{ text: '📞 تماس با پشتیبانی', url: 'https://t.me/shoma_shop_sup' }],
+      [{ text: '🔙 بازگشت به سوالات', callback_data: 'faq_list' }],
+      [{ text: '🏠 منوی اصلی', callback_data: 'main_menu' }]
     ]
   };
 }

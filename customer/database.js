@@ -16,3 +16,13 @@ export async function saveUserToDB(env, user) {
     console.error("Error saving user to DB:", error);
   }
 }
+
+export async function ensureUsersSchema(env) {
+  try {
+    await env.DB.exec(`ALTER TABLE users ADD COLUMN created_at TEXT DEFAULT (datetime('now'))`);
+  } catch (e) {
+    if (!e.message.includes('duplicate column name')) {
+      console.error('Schema migration error:', e);
+    }
+  }
+}

@@ -6,7 +6,8 @@ import {
   contactKeyboard, 
   addressKeyboard, 
   faqListKeyboard, 
-  faqDetailKeyboard 
+  faqDetailKeyboard,
+  faqContactKeyboard
 } from './keyboards.js';
 import { saveUserToDB } from './database.js';
 
@@ -200,7 +201,6 @@ export async function handleMessage(message, token, env) {
   const text = message.text || '';
   const session = getSession(chatId);
 
-  // ذخیره اطلاعات کاربر در دیتابیس
   await saveUserToDB(env, message.from);
 
   if (text === '/start') {
@@ -269,30 +269,49 @@ export async function handleCallback(callbackQuery, token) {
     if (data === 'contact') {
       pushState(session, 'contact');
       await editState(chatId, messageId, 'contact', token);
-    } else if (data === 'address') {
+    } 
+    else if (data === 'address') {
       pushState(session, 'address');
       await editState(chatId, messageId, 'address', token);
-    } else if (data === 'phone') {
+    } 
+    else if (data === 'phone') {
       pushState(session, 'phone');
       await editState(chatId, messageId, 'phone', token);
-    } else if (data.startsWith('faq:q:')) {
+    } 
+    else if (data === 'main_menu') {
+      session.stack = ['main'];
+      await sendMainMenu(chatId, token);
+      try {
+        await callApi(token, 'deleteMessage', {
+          chat_id: chatId,
+          message_id: messageId
+        });
+      } catch (e) {}
+    }
+    else if (data.startsWith('faq:q:')) {
       const index = parseInt(data.split(':')[2], 10);
       const item = CONFIG.faq[index];
       if (!item) return;
-      const text = `❓ ${item.q}\n\n${item.a}`;
-      const inlineKeyboard = faqDetailKeyboard();
+      
+      let text = `❓ ${item.q}\n\n${item.a}`;
+      let inlineKeyboard;
+      
+      if (index === 2) {
+        inlineKeyboard = faqContactKeyboard();
+      } else {
+        inlineKeyboard = faqDetailKeyboard();
+      }
+      
       await callApi(token, 'editMessageText', {
         chat_id: chatId,
         message_id: messageId,
         text: text,
         reply_markup: inlineKeyboard
       });
-    } else if (data === 'faq_list') {
-      if (session.stack[session.stack.length - 1] !== 'faq_list') {
+    } 
+    else if (data === 'faq_list') {
+      if (!session.stack.includes('faq_list')) {
         pushState(session, 'faq_list');
-      } else {
-        session.stack = session.stack.filter(s => s !== 'faq_list');
-        session.stack.push('faq_list');
       }
       await editState(chatId, messageId, 'faq_list', token);
     }

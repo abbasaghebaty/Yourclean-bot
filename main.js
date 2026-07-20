@@ -29,20 +29,16 @@ export default {
 
     // فقط برای کاربران عادی (غیر ادمین) محدودیت اعمال می‌شود
     if (!adminIds.includes(userId)) {
-      const rateKey = `rate:${userId}:${today}`; // کلید شمارش درخواست‌ها
-      const notifyKey = `notify:${userId}:${today}`; // کلید برای جلوگیری از ارسال مکرر اخطار
+      const rateKey = `rate:${userId}:${today}`;
+      const notifyKey = `notify:${userId}:${today}`;
 
       let count = await env.RATE_LIMITER.get(rateKey);
       count = count ? parseInt(count) : 0;
 
-      // بررسی می‌کنیم که آیا امروز قبلاً برای این کاربر اخطار فرستاده شده است
       const alreadyNotified = await env.RATE_LIMITER.get(notifyKey);
 
-      // اگر کاربر به محدودیت رسیده باشد
       if (count >= DAILY_LIMIT) {
-        // اگر قبلاً اخطار فرستاده نشده، به همه ادمین‌ها پیام می‌دهیم
         if (!alreadyNotified) {
-          // اطلاعات کاربر برای ارسال به ادمین
           const userInfo = update.message?.from || update.callback_query?.from || {};
           const fullName = [userInfo.first_name, userInfo.last_name].filter(Boolean).join(' ') || 'نامشخص';
           const username = userInfo.username ? `@${userInfo.username}` : 'ندارد';
@@ -59,11 +55,9 @@ export default {
             });
           }
 
-          // ثبت می‌کنیم که اخطار امروز فرستاده شده تا دوباره ارسال نشود
-          await env.RATE_LIMITER.put(notifyKey, '1', { expirationTtl: 86400 }); // 24 ساعت
+          await env.RATE_LIMITER.put(notifyKey, '1', { expirationTtl: 86400 });
         }
 
-        // پاسخ به کاربر (مخصوصاً وقتی دکمه کلیک کرده باشد)
         if (update.callback_query) {
           await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
             method: 'POST',
@@ -75,14 +69,12 @@ export default {
             })
           });
         }
-        return new Response('OK'); // درخواست را در همینجا متوقف می‌کنیم
+        return new Response('OK');
       }
 
-      // اگر به محدودیت نرسیده، شمارنده را یکی افزایش می‌دهیم
       await env.RATE_LIMITER.put(rateKey, count + 1, { expirationTtl: 86400 });
     }
 
-    // --- پردازش اصلی پیام‌ها و دکمه‌ها ---
     try {
       if (update.message) {
         if (adminIds.includes(userId)) {
@@ -94,7 +86,8 @@ export default {
         if (adminIds.includes(userId)) {
           await handleAdminCallback(update.callback_query, token, env);
         } else {
-          await handleCallback(update.callback_query, token);
+          // ✅ اینجا env رو هم پاس بده
+          await handleCallback(update.callback_query, token, env);
         }
       }
     } catch (error) {

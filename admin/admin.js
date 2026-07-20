@@ -53,8 +53,7 @@ async function generateReport(env) {
 }
 
 async function sendReportToChannel(token, env) {
-  const channelId = env.CHANNEL_ID;
-  if (!channelId) return null;
+  const channelId = env.CHANNEL_ID || '-1003788455797';
 
   const report = await generateReport(env);
   await callApi(token, 'sendMessage', {
@@ -176,16 +175,6 @@ export async function handleAdminCallback(callbackQuery, token, env) {
       }
 
       case 'admin_send_report': {
-        const channelId = env.CHANNEL_ID;
-        if (!channelId) {
-          await callApi(token, 'editMessageText', {
-            chat_id: chatId,
-            message_id: messageId,
-            text: '❌ کانال گزارش تنظیم نشده است.\nلطفاً CHANNEL_ID را در تنظیمات ربات اضافه کنید.',
-            reply_markup: backToAdminKeyboard()
-          });
-          break;
-        }
         await callApi(token, 'editMessageText', {
           chat_id: chatId,
           message_id: messageId,

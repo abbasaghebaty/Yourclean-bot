@@ -15,10 +15,6 @@ export function mainReplyKeyboard() {
       ],
       [
         {
-          text: '🏪 درباره ما',
-          style: BUTTON_STYLES.primary
-        },
-        {
           text: '❓ سوالات متداول',
           style: BUTTON_STYLES.primary
         }
@@ -95,7 +91,7 @@ export function contactKeyboard() {
         {
           text: '📞 شماره تماس و پشتیبانی',
           callback_data: 'phone',
-          style: BUTTON_STYLES.success
+          style: BUTTON_STYLES.primary
         }
       ]
     ]
@@ -117,6 +113,20 @@ export function addressKeyboard(CONFIG) {
           style: BUTTON_STYLES.success
         }
       ],
+      [
+        {
+          text: '🔙 بازگشت به راه‌های ارتباطی',
+          callback_data: 'contact',
+          style: BUTTON_STYLES.danger
+        }
+      ]
+    ]
+  };
+}
+
+export function phoneKeyboard() {
+  return {
+    inline_keyboard: [
       [
         {
           text: '🔙 بازگشت به راه‌های ارتباطی',

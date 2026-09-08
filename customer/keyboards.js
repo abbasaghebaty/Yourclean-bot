@@ -1,5 +1,18 @@
 import { BUTTON_STYLES } from './buttonStyles.js';
 
+function isValidUrl(url) {
+  if (!url || typeof url !== 'string') {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch (error) {
+    return false;
+  }
+}
+
 export function mainReplyKeyboard() {
   return {
     keyboard: [
@@ -26,54 +39,80 @@ export function mainReplyKeyboard() {
 }
 
 export function productsKeyboard(CONFIG) {
+  const buttons = [];
+
+  const socialButtons = [];
+
+  if (isValidUrl(CONFIG.eitaaUrl)) {
+    socialButtons.push({
+      text: '📱 ایتا',
+      url: CONFIG.eitaaUrl,
+      style: BUTTON_STYLES.success
+    });
+  }
+
+  if (isValidUrl(CONFIG.rubikaUrl)) {
+    socialButtons.push({
+      text: '📱 روبیکا',
+      url: CONFIG.rubikaUrl,
+      style: BUTTON_STYLES.success
+    });
+  }
+
+  if (socialButtons.length > 0) {
+    buttons.push(socialButtons);
+  }
+
+  if (isValidUrl(CONFIG.instagramUrl)) {
+    buttons.push([
+      {
+        text: '📸 اینستاگرام',
+        url: CONFIG.instagramUrl,
+        style: BUTTON_STYLES.success
+      }
+    ]);
+  }
+
   return {
-    inline_keyboard: [
-      [
-        {
-          text: '📱 ایتا',
-          url: CONFIG.eitaaUrl,
-          style: BUTTON_STYLES.success
-        },
-        {
-          text: '📱 روبیکا',
-          url: CONFIG.rubikaUrl,
-          style: BUTTON_STYLES.success
-        }
-      ],
-      [
-        {
-          text: '📸 اینستاگرام',
-          url: CONFIG.instagramUrl,
-          style: BUTTON_STYLES.success
-        }
-      ]
-    ]
+    inline_keyboard: buttons
   };
 }
 
 export function guideKeyboard(CONFIG) {
+  const keyboard = [];
+
+  const socialButtons = [];
+
+  if (isValidUrl(CONFIG.eitaaUrl)) {
+    socialButtons.push({
+      text: '📱 ایتا',
+      url: CONFIG.eitaaUrl,
+      style: BUTTON_STYLES.success
+    });
+  }
+
+  if (isValidUrl(CONFIG.rubikaUrl)) {
+    socialButtons.push({
+      text: '📱 روبیکا',
+      url: CONFIG.rubikaUrl,
+      style: BUTTON_STYLES.success
+    });
+  }
+
+  if (socialButtons.length > 0) {
+    keyboard.push(socialButtons);
+  }
+
+  keyboard.push([
+    {
+      text: '☎️ راه‌های ارتباطی',
+      callback_data: 'contact',
+      style: BUTTON_STYLES.primary
+    }
+  ]);
+
   return {
-    inline_keyboard: [
-      [
-        {
-          text: '📱 ایتا',
-          url: CONFIG.eitaaUrl,
-          style: BUTTON_STYLES.success
-        },
-        {
-          text: '📱 روبیکا',
-          url: CONFIG.rubikaUrl,
-          style: BUTTON_STYLES.success
-        }
-      ],
-      [
-        {
-          text: '☎️ راه‌های ارتباطی',
-          callback_data: 'contact',
-          style: BUTTON_STYLES.primary
-        }
-      ]
-    ]
+    inline_keyboard: keyboard
   };
 }
 
@@ -99,28 +138,40 @@ export function contactKeyboard() {
 }
 
 export function addressKeyboard(CONFIG) {
+  const keyboard = [];
+
+  const navigationButtons = [];
+
+  if (isValidUrl(CONFIG.neshanUrl)) {
+    navigationButtons.push({
+      text: '🗺 مسیریابی در نشان',
+      url: CONFIG.neshanUrl,
+      style: BUTTON_STYLES.success
+    });
+  }
+
+  if (isValidUrl(CONFIG.googleMapsUrl)) {
+    navigationButtons.push({
+      text: '📍 مسیریابی در گوگل مپ',
+      url: CONFIG.googleMapsUrl,
+      style: BUTTON_STYLES.success
+    });
+  }
+
+  if (navigationButtons.length > 0) {
+    keyboard.push(navigationButtons);
+  }
+
+  keyboard.push([
+    {
+      text: '🔙 بازگشت به راه‌های ارتباطی',
+      callback_data: 'contact',
+      style: BUTTON_STYLES.danger
+    }
+  ]);
+
   return {
-    inline_keyboard: [
-      [
-        {
-          text: '🗺 مسیریابی در نشان',
-          url: CONFIG.neshanUrl,
-          style: BUTTON_STYLES.success
-        },
-        {
-          text: '📍 مسیریابی در گوگل مپ',
-          url: CONFIG.googleMapsUrl,
-          style: BUTTON_STYLES.success
-        }
-      ],
-      [
-        {
-          text: '🔙 بازگشت به راه‌های ارتباطی',
-          callback_data: 'contact',
-          style: BUTTON_STYLES.danger
-        }
-      ]
-    ]
+    inline_keyboard: keyboard
   };
 }
 

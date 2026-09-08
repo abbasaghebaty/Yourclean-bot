@@ -146,7 +146,7 @@ export function addressKeyboard(CONFIG) {
     navigationButtons.push({
       text: '🗺 مسیریابی در نشان',
       url: CONFIG.neshanUrl,
-      style: BUTTON_STYLES.success
+      style: BUTTON_STYLES.primary
     });
   }
 
@@ -154,7 +154,7 @@ export function addressKeyboard(CONFIG) {
     navigationButtons.push({
       text: '📍 مسیریابی در گوگل مپ',
       url: CONFIG.googleMapsUrl,
-      style: BUTTON_STYLES.success
+      style: BUTTON_STYLES.primary
     });
   }
 

@@ -13,9 +13,9 @@ export const CONFIG = {
 
   instagramUrl: 'لینک فعلی اینستاگرام',
 
-  neshanUrl: 'لینک فعلی نشان',
+  neshanUrl: 'https://nshn.ir/357b1MaUNJjDV8',
 
-  googleMapsUrl: 'لینک فعلی گوگل مپ',
+  googleMapsUrl: 'https://maps.app.goo.gl/CpzYyvSusBmFViwi7',
 
   aboutText: '',
 

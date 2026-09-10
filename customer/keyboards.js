@@ -33,7 +33,7 @@ export function mainReplyKeyboard() {
       ],
       [
         {
-          text: '⚠️ صندوق انتقادات و پیشنهادات',
+          text: '📫 صندوق انتقادات و پیشنهادات',
           style: 'danger'
         }
       ]

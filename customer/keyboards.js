@@ -164,7 +164,7 @@ export function addressKeyboard(CONFIG) {
 
   keyboard.push([
     {
-      text: '🔙 بازگشت به راه‌های ارتباطی',
+      text: '🔙',
       callback_data: 'contact',
       style: BUTTON_STYLES.danger
     }
@@ -180,7 +180,7 @@ export function phoneKeyboard() {
     inline_keyboard: [
       [
         {
-          text: '🔙 بازگشت به راه‌های ارتباطی',
+          text: '🔙',
           callback_data: 'contact',
           style: BUTTON_STYLES.danger
         }
@@ -206,7 +206,7 @@ export function faqDetailKeyboard() {
     inline_keyboard: [
       [
         {
-          text: '🔙 بازگشت به سوالات',
+          text: '🔙',
           callback_data: 'faq_list',
           style: BUTTON_STYLES.danger
         }
@@ -220,7 +220,7 @@ export function faqContactKeyboard() {
     inline_keyboard: [
       [
         {
-          text: '🔙 بازگشت به سوالات',
+          text: '🔙',
           callback_data: 'faq_list',
           style: BUTTON_STYLES.danger
         }

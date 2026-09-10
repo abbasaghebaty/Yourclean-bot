@@ -67,30 +67,29 @@ export function productsKeyboard(config) {
 
 
 export function trustKeyboard(config) {
-  const buttons = [];
+  const row = [];
 
   if (isValidUrl(config.websiteUrl)) {
-    buttons.push([
-      {
-        text: '🌐 وب‌سایت رسمی فروشگاه',
-        url: config.websiteUrl,
-        style: 'primary'
-      }
-    ]);
+    row.push({
+      text: '🌐 وب‌سایت رسمی فروشگاه',
+      url: config.websiteUrl,
+      style: 'primary'
+    });
   }
 
   if (isValidUrl(config.enamadUrl)) {
-    buttons.push([
-      {
-        text: '🛡️ نماد اعتماد الکترونیکی',
-        url: config.enamadUrl,
-        style: 'primary'
-      }
-    ]);
+    row.push({
+      text: '🛡️ نماد اعتماد الکترونیکی',
+      url: config.enamadUrl,
+      style: 'primary'
+    });
   }
 
   return {
-    inline_keyboard: buttons
+    inline_keyboard:
+      row.length
+        ? [row]
+        : []
   };
 }
 

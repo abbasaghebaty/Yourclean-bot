@@ -14,7 +14,7 @@ export function mainReplyKeyboard() {
       [
         {
           text: '📦 مشاهده محصولات',
-          style: 'success'
+          style: 'primary'
         },
         {
           text: '🛡️ اعتماد و اعتبار',

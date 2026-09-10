@@ -8,6 +8,7 @@ import {
   contactKeyboard,
   addressKeyboard,
   phoneKeyboard,
+  feedbackKeyboard,
   faqListKeyboard,
   faqDetailKeyboard
 } from './keyboards.js';
@@ -65,6 +66,13 @@ export function getStateView(state, config) {
       return {
         text: texts.phone(config),
         keyboard: phoneKeyboard(),
+        keyboardType: 'inline'
+      };
+
+    case 'feedback':
+      return {
+        text: texts.feedback(),
+        keyboard: feedbackKeyboard(),
         keyboardType: 'inline'
       };
 

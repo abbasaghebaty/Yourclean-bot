@@ -30,17 +30,10 @@ export function mainReplyKeyboard() {
           text: '❓ سوالات متداول',
           style: 'primary'
         }
-      ],
-      [
-        {
-          text: '📝 راهنمای ثبت سفارش',
-          style: 'primary'
-        }
       ]
     ],
 
-    resize_keyboard: true,
-    is_persistent: true
+    resize_keyboard: true
   };
 }
 
@@ -98,28 +91,6 @@ export function trustKeyboard(config) {
 
   return {
     inline_keyboard: buttons
-  };
-}
-
-
-export function guideKeyboard() {
-  return {
-    inline_keyboard: [
-      [
-        {
-          text: '☎️ ارتباط با پشتیبانی',
-          callback_data: 'contact',
-          style: 'primary'
-        }
-      ],
-      [
-        {
-          text: '🔙',
-          callback_data: 'main',
-          style: 'danger'
-        }
-      ]
-    ]
   };
 }
 

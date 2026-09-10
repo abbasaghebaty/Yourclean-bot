@@ -5,7 +5,6 @@ import {
   mainReplyKeyboard,
   productsKeyboard,
   trustKeyboard,
-  guideKeyboard,
   contactKeyboard,
   addressKeyboard,
   phoneKeyboard,
@@ -45,13 +44,6 @@ export function getStateView(state, config) {
       return {
         text: texts.trust(config),
         keyboard: trustKeyboard(config),
-        keyboardType: 'inline'
-      };
-
-    case 'guide':
-      return {
-        text: texts.guide(config),
-        keyboard: guideKeyboard(),
         keyboardType: 'inline'
       };
 

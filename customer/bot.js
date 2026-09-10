@@ -109,7 +109,6 @@ const MENU_BUTTON_STATES = {
   '📦 مشاهده محصولات': 'products',
   '🛡️ اعتماد و اعتبار': 'trust',
   '☎️ راه‌های ارتباطی': 'contact',
-  '📝 راهنمای ثبت سفارش': 'guide',
   '❓ سوالات متداول': 'faq'
 };
 
@@ -192,7 +191,6 @@ export async function handleCallback(env, update) {
   const knownInlineStates = [
     'products',
     'trust',
-    'guide',
     'contact',
     'address',
     'phone',

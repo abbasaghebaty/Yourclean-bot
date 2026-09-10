@@ -1,10 +1,8 @@
 import { handleMessage, handleCallback } from './customer/bot.js';
+import { getToken, callApi } from './customer/telegram.js';
+import { texts } from './customer/texts.js';
 
 const DAILY_LIMIT = 150;
-
-function getToken(env) {
-  return env.BOT_TOKEN || env.TELEGRAM_BOT_TOKEN;
-}
 
 export default {
   async fetch(request, env) {
@@ -80,25 +78,24 @@ export default {
             : 0;
 
         if (count >= DAILY_LIMIT) {
-          await fetch(
-            `https://api.telegram.org/bot${token}/sendMessage`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type':
-                  'application/json'
-              },
-              body: JSON.stringify({
+          try {
+            await callApi(
+              token,
+              'sendMessage',
+              {
                 chat_id:
                   update.message.chat.id,
 
                 text:
-                  `محدودیت روزانه\n\n` +
-                  `شما تنها ${DAILY_LIMIT} پیام در روز می‌توانید ارسال کنید.\n` +
-                  `لطفاً فردا دوباره تلاش کنید.`
-              })
-            }
-          );
+                  texts.rateLimited(DAILY_LIMIT)
+              }
+            );
+          } catch (error) {
+            console.error(
+              'Failed to send rate-limit message:',
+              error
+            );
+          }
 
           return new Response(
             'Rate limited',

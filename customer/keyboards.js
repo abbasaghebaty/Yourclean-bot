@@ -1,3 +1,4 @@
+
 function isValidUrl(url) {
   return (
     typeof url === 'string' &&
@@ -132,13 +133,6 @@ export function contactKeyboard() {
           callback_data: 'phone',
           style: 'primary'
         }
-      ],
-      [
-        {
-          text: '🔙 بازگشت',
-          callback_data: 'main',
-          style: 'danger'
-        }
       ]
     ]
   };
@@ -211,14 +205,6 @@ export function faqListKeyboard(config) {
         }
       ]
     );
-
-  buttons.push([
-    {
-      text: '🔙 بازگشت',
-      callback_data: 'main',
-      style: 'danger'
-    }
-  ]);
 
   return {
     inline_keyboard: buttons

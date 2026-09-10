@@ -1,97 +1,89 @@
-
-import { BUTTON_STYLES } from './buttonStyles.js';
-
 function isValidUrl(url) {
-  return typeof url === 'string' && /^https?:\/\//i.test(url);
+  return (
+    typeof url === 'string' &&
+    /^https?:\/\//i.test(url)
+  );
 }
 
-/**
- * Main menu
- */
+
 export function mainReplyKeyboard() {
   return {
     keyboard: [
       [
         {
           text: '📦 مشاهده محصولات',
-          style: BUTTON_STYLES.success
+          style: 'success'
         },
         {
           text: '🛡️ اعتماد و اعتبار',
-          style: BUTTON_STYLES.primary
+          style: 'primary'
         }
       ],
       [
         {
           text: '☎️ راه‌های ارتباطی',
-          style: BUTTON_STYLES.primary
+          style: 'primary'
         },
         {
           text: '❓ سوالات متداول',
-          style: BUTTON_STYLES.primary
+          style: 'primary'
         }
       ]
     ],
+
     resize_keyboard: true,
     is_persistent: true
   };
 }
 
-/**
- * Product channels
- */
-export function productsKeyboard(CONFIG) {
-  const buttons = [];
 
-  const channelButtons = [];
+export function productsKeyboard(config) {
+  const row = [];
 
-  if (isValidUrl(CONFIG.eitaaUrl)) {
-    channelButtons.push({
+  if (isValidUrl(config.eitaaUrl)) {
+    row.push({
       text: '📱 ایتا',
-      url: CONFIG.eitaaUrl,
-      style: BUTTON_STYLES.primary
+      url: config.eitaaUrl,
+      style: 'primary'
     });
   }
 
-  if (isValidUrl(CONFIG.rubikaUrl)) {
-    channelButtons.push({
+  if (isValidUrl(config.rubikaUrl)) {
+    row.push({
       text: '📱 روبیکا',
-      url: CONFIG.rubikaUrl,
-      style: BUTTON_STYLES.primary
+      url: config.rubikaUrl,
+      style: 'primary'
     });
-  }
-
-  if (channelButtons.length) {
-    buttons.push(channelButtons);
   }
 
   return {
-    inline_keyboard: buttons
+    inline_keyboard:
+      row.length
+        ? [row]
+        : []
   };
 }
 
-/**
- * Trust / credibility
- */
-export function trustKeyboard(CONFIG) {
+
+export function trustKeyboard(config) {
   const buttons = [];
 
-  if (isValidUrl(CONFIG.websiteUrl)) {
+  if (isValidUrl(config.websiteUrl)) {
     buttons.push([
       {
         text: '🌐 وب‌سایت رسمی فروشگاه',
-        url: CONFIG.websiteUrl,
-        style: BUTTON_STYLES.primary
+        url: config.websiteUrl,
+        style: 'primary'
       }
     ]);
   }
 
-  if (isValidUrl(CONFIG.enamadUrl)) {
+  if (isValidUrl(config.enamadUrl)) {
     buttons.push([
       {
         text: '🛡️ نماد اعتماد الکترونیکی',
-        url: CONFIG.enamadUrl,
-        style: BUTTON_STYLES.primary
+        url: config.enamadUrl,
+        style: 'primary'
       }
     ]);
   }
@@ -101,9 +93,7 @@ export function trustKeyboard(CONFIG) {
   };
 }
 
-/**
- * Guide
- */
+
 export function guideKeyboard() {
   return {
     inline_keyboard: [
@@ -111,23 +101,21 @@ export function guideKeyboard() {
         {
           text: '☎️ ارتباط با پشتیبانی',
           callback_data: 'contact',
-          style: BUTTON_STYLES.primary
+          style: 'primary'
         }
       ],
       [
         {
           text: '🔙 بازگشت',
           callback_data: 'main',
-          style: BUTTON_STYLES.danger
+          style: 'danger'
         }
       ]
     ]
   };
 }
 
-/**
- * Contact
- */
+
 export function contactKeyboard() {
   return {
     inline_keyboard: [
@@ -135,113 +123,100 @@ export function contactKeyboard() {
         {
           text: '📍 آدرس فروشگاه',
           callback_data: 'address',
-          style: BUTTON_STYLES.primary
+          style: 'primary'
         }
       ],
       [
         {
           text: '☎️ شماره تماس',
           callback_data: 'phone',
-          style: BUTTON_STYLES.primary
+          style: 'primary'
         }
       ],
       [
         {
           text: '🔙 بازگشت',
           callback_data: 'main',
-          style: BUTTON_STYLES.danger
+          style: 'danger'
         }
       ]
     ]
   };
 }
 
-/**
- * Address
- */
-export function addressKeyboard(CONFIG) {
-  const buttons = [];
 
-  const navigationButtons = [];
+export function addressKeyboard(config) {
+  const navigationRow = [];
 
-  if (isValidUrl(CONFIG.neshanUrl)) {
-    navigationButtons.push({
+  if (isValidUrl(config.neshanUrl)) {
+    navigationRow.push({
       text: '🗺️ نشان',
-      url: CONFIG.neshanUrl,
-      style: BUTTON_STYLES.primary
+      url: config.neshanUrl,
+      style: 'primary'
     });
   }
 
-  if (isValidUrl(CONFIG.googleMapsUrl)) {
-    navigationButtons.push({
+  if (isValidUrl(config.googleMapsUrl)) {
+    navigationRow.push({
       text: '📍 Google Maps',
-      url: CONFIG.googleMapsUrl,
-      style: BUTTON_STYLES.primary
+      url: config.googleMapsUrl,
+      style: 'primary'
     });
   }
 
-  if (navigationButtons.length) {
-    buttons.push(navigationButtons);
+  const rows = [];
+
+  if (navigationRow.length) {
+    rows.push(navigationRow);
   }
 
-  buttons.push([
+  rows.push([
     {
       text: '🔙 بازگشت',
       callback_data: 'contact',
-      style: BUTTON_STYLES.danger
+      style: 'danger'
     }
   ]);
 
   return {
-    inline_keyboard: buttons
+    inline_keyboard: rows
   };
 }
 
-/**
- * Phone
- */
+
 export function phoneKeyboard() {
   return {
     inline_keyboard: [
       [
         {
-          text: '☎️ تماس با فروشگاه',
-          callback_data: 'contact_phone',
-          style: BUTTON_STYLES.primary
-        }
-      ],
-      [
-        {
           text: '🔙 بازگشت',
           callback_data: 'contact',
-          style: BUTTON_STYLES.danger
+          style: 'danger'
         }
       ]
     ]
   };
 }
 
-/**
- * FAQ list
- */
-export function faqListKeyboard(CONFIG) {
-  const buttons = [];
 
-  for (let i = 0; i < CONFIG.faq.length; i++) {
-    buttons.push([
-      {
-        text: CONFIG.faq[i].q,
-        callback_data: `faq_${i}`,
-        style: BUTTON_STYLES.primary
-      }
-    ]);
-  }
+export function faqListKeyboard(config) {
+  const buttons =
+    config.faq.map(
+      (item, index) => [
+        {
+          text: item.q,
+          callback_data:
+            `faq_${index}`,
+          style: 'primary'
+        }
+      ]
+    );
 
   buttons.push([
     {
       text: '🔙 بازگشت',
       callback_data: 'main',
-      style: BUTTON_STYLES.danger
+      style: 'danger'
     }
   ]);
 
@@ -250,9 +225,7 @@ export function faqListKeyboard(CONFIG) {
   };
 }
 
-/**
- * FAQ detail
- */
+
 export function faqDetailKeyboard() {
   return {
     inline_keyboard: [
@@ -260,34 +233,16 @@ export function faqDetailKeyboard() {
         {
           text: '☎️ ارتباط با پشتیبانی',
           callback_data: 'contact',
-          style: BUTTON_STYLES.primary
+          style: 'primary'
         }
       ],
       [
         {
           text: '🔙 بازگشت به سوالات',
           callback_data: 'faq',
-          style: BUTTON_STYLES.danger
+          style: 'danger'
         }
       ]
     ]
   };
 }
-
-/**
- * FAQ contact
- */
-export function faqContactKeyboard() {
-  return {
-    inline_keyboard: [
-      [
-        {
-          text: '🔙 بازگشت',
-          callback_data: 'faq',
-          style: BUTTON_STYLES.danger
-        }
-      ]
-    ]
-  };
-}
-

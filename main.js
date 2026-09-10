@@ -2,10 +2,35 @@ import { handleMessage, handleCallback } from './customer/bot.js';
 
 const DAILY_LIMIT = 150;
 
+function getToken(env) {
+  return env.BOT_TOKEN || env.TELEGRAM_BOT_TOKEN;
+}
+
 export default {
   async fetch(request, env) {
+    if (request.method === 'GET') {
+      return new Response('YourClean bot is running.', {
+        status: 200
+      });
+    }
+
     if (request.method !== 'POST') {
-      return new Response('OK');
+      return new Response('Method Not Allowed', {
+        status: 405
+      });
+    }
+
+    const token = getToken(env);
+
+    if (!token) {
+      console.error(
+        'BOT_TOKEN / TELEGRAM_BOT_TOKEN is not configured.'
+      );
+
+      return new Response(
+        'Bot token is not configured.',
+        { status: 500 }
+      );
     }
 
     let update;
@@ -13,100 +38,113 @@ export default {
     try {
       update = await request.json();
     } catch (error) {
-      return new Response('Invalid JSON', { status: 400 });
+      console.error('Invalid Telegram update:', error);
+
+      return new Response(
+        'Invalid JSON',
+        { status: 400 }
+      );
     }
 
-    const token = env.BOT_TOKEN;
+    const userId =
+      update.message?.from?.id ??
+      update.callback_query?.from?.id;
 
-    let userId = null;
-
-    if (update.message) {
-      userId = String(update.message.from.id);
-    } else if (update.callback_query) {
-      userId = String(update.callback_query.from.id);
-    }
+    const isMessage = Boolean(update.message);
 
     if (!userId) {
-      return new Response('No user ID', { status: 400 });
+      return new Response('OK', {
+        status: 200
+      });
     }
 
-    // محدودیت روزانه ضداسپم
-    const today = new Date().toISOString().split('T')[0];
-    const rateKey = `rate:${userId}:${today}`;
+    /*
+     * فقط پیام واقعی کاربر
+     * callbackها محدودیت روزانه را مصرف نمی‌کنند.
+     */
+    if (isMessage) {
+      const today = new Date()
+        .toISOString()
+        .slice(0, 10);
 
-    let count = 0;
+      const rateKey =
+        `rate:${userId}:${today}`;
 
-    try {
-      const raw = await env.RATE_LIMITER.get(rateKey);
-      count = raw ? parseInt(raw, 10) : 0;
-    } catch (error) {
-      console.error('Rate limiter read error:', error);
-    }
+      try {
+        const raw =
+          await env.RATE_LIMITER.get(rateKey);
 
-    if (count >= DAILY_LIMIT) {
-      if (update.message) {
-        await fetch(
-          `https://api.telegram.org/bot${token}/sendMessage`,
+        const count =
+          raw
+            ? Number.parseInt(raw, 10)
+            : 0;
+
+        if (count >= DAILY_LIMIT) {
+          await fetch(
+            `https://api.telegram.org/bot${token}/sendMessage`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type':
+                  'application/json'
+              },
+              body: JSON.stringify({
+                chat_id:
+                  update.message.chat.id,
+
+                text:
+                  `محدودیت روزانه\n\n` +
+                  `شما تنها ${DAILY_LIMIT} پیام در روز می‌توانید ارسال کنید.\n` +
+                  `لطفاً فردا دوباره تلاش کنید.`
+              })
+            }
+          );
+
+          return new Response(
+            'Rate limited',
+            { status: 200 }
+          );
+        }
+
+        await env.RATE_LIMITER.put(
+          rateKey,
+          String(count + 1),
           {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              chat_id: update.message.chat.id,
-              text:
-                `محدودیت روزانه\n\n` +
-                `شما تنها ${DAILY_LIMIT} پیام در روز می‌توانید ارسال کنید.\n` +
-                `لطفاً فردا دوباره تلاش کنید.`
-            })
+            expirationTtl: 86400
           }
         );
-      } else if (update.callback_query) {
-        await fetch(
-          `https://api.telegram.org/bot${token}/answerCallbackQuery`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              callback_query_id: update.callback_query.id,
-              text: `محدودیت روزانه (${DAILY_LIMIT} پیام) تمام شد.`,
-              show_alert: true
-            })
-          }
+      } catch (error) {
+        /*
+         * خرابی KV نباید کل ربات را از کار بیندازد.
+         */
+        console.error(
+          'Rate limiter error:',
+          error
         );
       }
-
-      return new Response('Rate limited', { status: 429 });
     }
-
-    await env.RATE_LIMITER.put(
-      rateKey,
-      String(count + 1),
-      {
-        expirationTtl: 86400
-      }
-    );
 
     try {
       if (update.message) {
         await handleMessage(
-          update.message,
-          token,
-          env
+          env,
+          update
         );
       } else if (update.callback_query) {
         await handleCallback(
-          update.callback_query,
-          token,
-          env
+          env,
+          update
         );
       }
     } catch (error) {
-      console.error('Unhandled error:', error);
+      console.error(
+        'Unhandled bot error:',
+        error
+      );
     }
 
-    return new Response('OK');
+    return new Response('OK', {
+      status: 200
+    });
   }
 };

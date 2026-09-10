@@ -1,4 +1,4 @@
-```js
+
 import { CONFIG } from './config.js';
 
 import {

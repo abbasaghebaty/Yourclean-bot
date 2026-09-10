@@ -1,4 +1,4 @@
-```js
+
 import { BUTTON_STYLES } from './buttonStyles.js';
 
 function isValidUrl(url) {

@@ -1,43 +1,60 @@
-export async function saveUserToDB(env, user) {
-  try {
-    await env.DB.prepare(
-      `INSERT OR IGNORE INTO users 
-      (telegram_id, username, first_name, last_name, created_at)
-      VALUES (?, ?, ?, ?, datetime('now'))`
+async function ensureUsersTable(env) {
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS users (
+      telegram_id INTEGER PRIMARY KEY,
+      username TEXT DEFAULT '',
+      first_name TEXT DEFAULT '',
+      last_name TEXT DEFAULT '',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
-    .bind(
-      user.id,
-      user.username || "",
-      user.first_name || "",
-      user.last_name || ""
-    )
-    .run();
-  } catch (error) {
-    try {
-      await env.DB.prepare(
-        `INSERT OR IGNORE INTO users 
-        (telegram_id, username, first_name, last_name)
-        VALUES (?, ?, ?, ?)`
-      )
-      .bind(
-        user.id,
-        user.username || "",
-        user.first_name || "",
-        user.last_name || ""
-      )
-      .run();
-    } catch (e) {
-      console.error("Error saving user to DB:", e);
-    }
-  }
+  `).run();
 }
 
-export async function ensureUsersSchema(env) {
+
+export async function saveUserToDB(
+  env,
+  user
+) {
+  if (
+    !env.DB ||
+    !user?.id
+  ) {
+    return;
+  }
+
   try {
-    await env.DB.exec(`ALTER TABLE users ADD COLUMN created_at TEXT DEFAULT (datetime('now'))`);
-  } catch (e) {
-    if (!e.message.includes('duplicate column name')) {
-      console.error('Schema migration error:', e);
-    }
+    await ensureUsersTable(env);
+
+    await env.DB.prepare(`
+      INSERT INTO users (
+        telegram_id,
+        username,
+        first_name,
+        last_name
+      )
+      VALUES (?, ?, ?, ?)
+
+      ON CONFLICT(telegram_id)
+      DO UPDATE SET
+        username = excluded.username,
+        first_name = excluded.first_name,
+        last_name = excluded.last_name
+    `)
+      .bind(
+        user.id,
+        user.username || '',
+        user.first_name || '',
+        user.last_name || ''
+      )
+      .run();
+
+  } catch (error) {
+    /*
+     * دیتابیس نباید مانع پاسخ ربات شود.
+     */
+    console.error(
+      'Error saving user to D1:',
+      error
+    );
   }
 }

@@ -2,168 +2,102 @@ import { texts } from './texts.js';
 import { faq } from './faq.js';
 
 import {
-mainReplyKeyboard,
-productsKeyboard,
-trustKeyboard,
-guideKeyboard,
-contactKeyboard,
-addressKeyboard,
-phoneKeyboard,
-faqListKeyboard,
-faqDetailKeyboard
+  mainReplyKeyboard,
+  productsKeyboard,
+  trustKeyboard,
+  guideKeyboard,
+  contactKeyboard,
+  addressKeyboard,
+  phoneKeyboard,
+  faqListKeyboard,
+  faqDetailKeyboard
 } from './keyboards.js';
 
 /*
+ * هر state دقیقاً یک متن و یک کیبورد دارد که هم موقع ارسال پیام
+ * جدید و هم موقع ویرایش پیام قبلی استفاده می‌شود.
+ *
+ * keyboardType:
+ *   'reply'  → کیبورد ثابت پایین صفحه
+ *   'inline' → دکمه‌های شیشه‌ای زیر پیام
+ *
+ * این تفاوت مهم است چون Telegram اجازه نمی‌دهد ReplyKeyboardMarkup
+ * را از طریق editMessageText تنظیم کنیم.
+ */
 
-* هر state دقیقاً یک متن و یک کیبورد دارد که هم موقع ارسال پیام
-* جدید و هم موقع ویرایش پیام قبلی استفاده می‌شود.
-*
-* keyboardType:
-* * 'reply'  → کیبورد ثابت پایین صفحه
-* * 'inline' → دکمه‌های شیشه‌ای زیر پیام
-*
-* این تفاوت مهم است چون Telegram اجازه نمی‌دهد ReplyKeyboardMarkup
-* را از طریق editMessageText تنظیم کنیم.
-  */
+export function getStateView(state, config) {
+  switch (state) {
+    case 'main':
+      return {
+        text: texts.main(config),
+        keyboard: mainReplyKeyboard(),
+        keyboardType: 'reply'
+      };
 
-export function getStateView(
-state,
-config
-) {
-switch (state) {
-case 'main':
-return {
-text:
-texts.main(config),
+    case 'products':
+      return {
+        text: texts.products(),
+        keyboard: productsKeyboard(config),
+        keyboardType: 'inline'
+      };
 
-```
-    keyboard:
-      mainReplyKeyboard(),
+    case 'trust':
+      return {
+        text: texts.trust(config),
+        keyboard: trustKeyboard(config),
+        keyboardType: 'inline'
+      };
 
-    keyboardType:
-      'reply'
-  };
+    case 'guide':
+      return {
+        text: texts.guide(config),
+        keyboard: guideKeyboard(),
+        keyboardType: 'inline'
+      };
 
+    case 'contact':
+      return {
+        text: texts.contact(),
+        keyboard: contactKeyboard(),
+        keyboardType: 'inline'
+      };
 
-case 'products':
-  return {
-    text:
-      texts.products(),
+    case 'address':
+      return {
+        text: texts.address(config),
+        keyboard: addressKeyboard(config),
+        keyboardType: 'inline'
+      };
 
-    keyboard:
-      productsKeyboard(config),
+    case 'phone':
+      return {
+        text: texts.phone(config),
+        keyboard: phoneKeyboard(),
+        keyboardType: 'inline'
+      };
 
-    keyboardType:
-      'inline'
-  };
+    case 'faq':
+      return {
+        text: texts.faq(),
+        keyboard: faqListKeyboard(),
+        keyboardType: 'inline'
+      };
 
-
-case 'trust':
-  return {
-    text:
-      texts.trust(config),
-
-    keyboard:
-      trustKeyboard(config),
-
-    keyboardType:
-      'inline'
-  };
-
-
-case 'guide':
-  return {
-    text:
-      texts.guide(config),
-
-    keyboard:
-      guideKeyboard(),
-
-    keyboardType:
-      'inline'
-  };
-
-
-case 'contact':
-  return {
-    text:
-      texts.contact(),
-
-    keyboard:
-      contactKeyboard(),
-
-    keyboardType:
-      'inline'
-  };
-
-
-case 'address':
-  return {
-    text:
-      texts.address(config),
-
-    keyboard:
-      addressKeyboard(config),
-
-    keyboardType:
-      'inline'
-  };
-
-
-case 'phone':
-  return {
-    text:
-      texts.phone(config),
-
-    keyboard:
-      phoneKeyboard(),
-
-    keyboardType:
-      'inline'
-  };
-
-
-case 'faq':
-  return {
-    text:
-      texts.faq(),
-
-    keyboard:
-      faqListKeyboard(),
-
-    keyboardType:
-      'inline'
-  };
-
-
-default:
-  return null;
-```
-
-}
+    default:
+      return null;
+  }
 }
 
-export function getFaqDetailView(
-index
-) {
-const item =
-faq[index];
+export function getFaqDetailView(index) {
+  const item = faq[index];
 
-if (!item) {
-return null;
-}
+  if (!item) {
+    return null;
+  }
 
-return {
-text:
-texts.faqDetail(item),
-
-```
-keyboard:
-  faqDetailKeyboard(),
-
-keyboardType:
-  'inline'
-```
-
-};
+  return {
+    text: texts.faqDetail(item),
+    keyboard: faqDetailKeyboard(),
+    keyboardType: 'inline'
+  };
 }

@@ -1,3 +1,5 @@
+import { faq } from './faq.js';
+
 function isValidUrl(url) {
   return (
     typeof url === 'string' &&
@@ -26,6 +28,12 @@ export function mainReplyKeyboard() {
         },
         {
           text: '❓ سوالات متداول',
+          style: 'primary'
+        }
+      ],
+      [
+        {
+          text: '📝 راهنمای ثبت سفارش',
           style: 'primary'
         }
       ]

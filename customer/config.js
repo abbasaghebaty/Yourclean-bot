@@ -1,4 +1,4 @@
-```js
+
 export const CONFIG = {
   shopName: 'شما شاپ',
 

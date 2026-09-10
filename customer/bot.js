@@ -8,6 +8,7 @@ import {
 } from './states.js';
 import { saveUserToDB } from './database.js';
 
+
 /*
  * پیام جدید ارسال می‌کند.
  * برای واکنش به دکمه‌های کیبورد ثابت (reply keyboard) و /start.
@@ -29,6 +30,7 @@ async function sendState(env, token, chatId, userId, state) {
     reply_markup: view.keyboard
   });
 }
+
 
 /*
  * پیام موجود را ویرایش می‌کند (واکنش به دکمه‌های شیشه‌ای/inline).
@@ -84,6 +86,7 @@ async function editState(env, token, chatId, messageId, userId, state) {
   });
 }
 
+
 async function editFaqDetail(env, token, chatId, messageId, userId, index) {
   const view = getFaqDetailView(index);
 
@@ -102,6 +105,7 @@ async function editFaqDetail(env, token, chatId, messageId, userId, index) {
   });
 }
 
+
 /*
  * نگاشت دکمه‌های کیبورد ثابت به state مربوطه.
  */
@@ -109,8 +113,10 @@ const MENU_BUTTON_STATES = {
   '📦 مشاهده محصولات': 'products',
   '🛡️ اعتماد و اعتبار': 'trust',
   '☎️ راه‌های ارتباطی': 'contact',
-  '❓ سوالات متداول': 'faq'
+  '❓ سوالات متداول': 'faq',
+  '⚠️ صندوق انتقادات و پیشنهادات': 'feedback'
 };
+
 
 /*
  * Messages
@@ -149,6 +155,7 @@ export async function handleMessage(env, update) {
 
   await sendState(env, token, chatId, userId, targetState || 'main');
 }
+
 
 /*
  * Callback queries
@@ -194,6 +201,7 @@ export async function handleCallback(env, update) {
     'contact',
     'address',
     'phone',
+    'feedback',
     'faq'
   ];
 

@@ -215,7 +215,7 @@ export function faqDetailKeyboard() {
     inline_keyboard: [
       [
         {
-          text: '🔙 به سوالات',
+          text: '🔙',
           callback_data: 'faq',
           style: 'danger'
         }

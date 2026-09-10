@@ -1,4 +1,3 @@
-
 function isValidUrl(url) {
   return (
     typeof url === 'string' &&
@@ -193,9 +192,9 @@ export function phoneKeyboard() {
 }
 
 
-export function faqListKeyboard(config) {
+export function faqListKeyboard() {
   const buttons =
-    config.faq.map(
+    faq.map(
       (item, index) => [
         {
           text: item.q,

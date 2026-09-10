@@ -1,4 +1,5 @@
 import { texts } from './texts.js';
+import { faq } from './faq.js';
 
 import {
   mainReplyKeyboard,
@@ -27,6 +28,7 @@ import {
  * با ارسال پیام جدید (sendMessage) قابل نمایش است. bot.js از روی
  * همین فیلد تصمیم می‌گیرد کِی باید به‌جای ویرایش، پیام تازه بفرستد.
  */
+
 export function getStateView(
   state,
   config
@@ -91,7 +93,7 @@ export function getStateView(
     case 'faq':
       return {
         text: texts.faq(),
-        keyboard: faqListKeyboard(config),
+        keyboard: faqListKeyboard(),
         keyboardType: 'inline'
       };
 
@@ -103,10 +105,9 @@ export function getStateView(
 
 
 export function getFaqDetailView(
-  index,
-  config
+  index
 ) {
-  const item = config.faq[index];
+  const item = faq[index];
 
   if (!item) {
     return null;

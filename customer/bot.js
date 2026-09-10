@@ -1,7 +1,10 @@
+```js
 import { CONFIG } from './config.js';
+
 import {
   mainReplyKeyboard,
   productsKeyboard,
+  trustKeyboard,
   guideKeyboard,
   contactKeyboard,
   addressKeyboard,
@@ -10,437 +13,584 @@ import {
   faqDetailKeyboard,
   faqContactKeyboard
 } from './keyboards.js';
+
 import { saveUserToDB } from './database.js';
 
-// ==============================================
-// صدا زدن API تلگرام
-// ==============================================
+function getToken(env) {
+  return env.BOT_TOKEN || env.TELEGRAM_BOT_TOKEN;
+}
+
 async function callApi(token, method, body) {
-  const url = `https://api.telegram.org/bot${token}/${method}`;
+  const response = await fetch(
+    `https://api.telegram.org/bot${token}/${method}`,
+    {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    }
+  );
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(body)
-  });
+  return response.json();
+}
 
-  const data = await response.json();
+/**
+ * Get current session stack from KV
+ */
+async function getStack(env, userId) {
+  const raw = await env.RATE_LIMITER.get(`session:${userId}`);
 
-  if (!data.ok) {
-    console.error(`Telegram API error (${method}):`, data.description);
+  if (!raw) {
+    return [];
   }
 
-  return data;
-}
-
-// ==============================================
-// مدیریت Session با KV
-// ==============================================
-async function getSession(chatId, env) {
   try {
-    const raw = await env.RATE_LIMITER.get(`session:${chatId}`);
+    const parsed = JSON.parse(raw);
 
-    if (raw) {
-      return JSON.parse(raw);
-    }
-  } catch (e) {}
-
-  return {
-    stack: ['main']
-  };
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 }
 
-async function saveSession(chatId, session, env) {
+/**
+ * Save session stack
+ */
+async function saveStack(env, userId, stack) {
   await env.RATE_LIMITER.put(
-    `session:${chatId}`,
-    JSON.stringify(session),
+    `session:${userId}`,
+    JSON.stringify(stack),
     {
       expirationTtl: 3600
     }
   );
 }
 
-async function pushState(chatId, newState, env) {
-  const session = await getSession(chatId, env);
+/**
+ * Push a new state
+ */
+async function pushState(env, userId, state) {
+  const stack = await getStack(env, userId);
 
-  session.stack.push(newState);
+  stack.push(state);
 
-  await saveSession(chatId, session, env);
+  await saveStack(env, userId, stack);
 
-  return session;
+  return stack;
 }
 
-async function popState(chatId, env) {
-  const session = await getSession(chatId, env);
+/**
+ * Replace current state
+ */
+async function replaceState(env, userId, state) {
+  const stack = await getStack(env, userId);
 
-  if (session.stack.length > 1) {
-    session.stack.pop();
-
-    await saveSession(chatId, session, env);
-
-    return session.stack[session.stack.length - 1];
+  if (stack.length) {
+    stack[stack.length - 1] = state;
+  } else {
+    stack.push(state);
   }
 
-  return 'main';
+  await saveStack(env, userId, stack);
+
+  return stack;
 }
 
-async function resetSession(chatId, env) {
-  const session = {
-    stack: ['main']
-  };
+/**
+ * Go back one state
+ */
+async function popState(env, userId) {
+  const stack = await getStack(env, userId);
 
-  await saveSession(chatId, session, env);
+  if (stack.length > 1) {
+    stack.pop();
+  } else {
+    return ['main'];
+  }
 
-  return session;
+  await saveStack(env, userId, stack);
+
+  return stack;
 }
 
-// ==============================================
-// ارسال منوی اصلی
-// ==============================================
-export async function sendMainMenu(chatId, token) {
-  const text =
-    `🏪 به ${CONFIG.shopName} خوش آمدید\n\n` +
-    `🛍️ کیفیت، قیمت مناسب و خریدی مطمئن\n` +
-    `لطفاً یکی از گزینه‌های زیر را انتخاب کنید.`;
-
-  const replyMarkup = mainReplyKeyboard();
-
-  await callApi(token, 'sendMessage', {
-    chat_id: chatId,
-    text: text,
-    reply_markup: replyMarkup
-  });
+/**
+ * Clear session and return to main
+ */
+async function clearState(env, userId) {
+  await saveStack(env, userId, ['main']);
 }
 
-// ==============================================
-// ارسال منو بر اساس State
-// ==============================================
-async function sendState(chatId, state, token) {
+/**
+ * Send a state
+ */
+async function sendState(env, token, chatId, userId, state) {
+  await replaceState(env, userId, state);
+
   switch (state) {
-    case 'main':
-      await sendMainMenu(chatId, token);
-      break;
+    /**
+     * MAIN
+     */
+    case 'main': {
+      await callApi(token, 'sendMessage', {
+        chat_id: chatId,
+        text:
+          `🧼 <b>${CONFIG.shopName}</b>\n\n` +
+          `به فروشگاه شوینده بهداشتی «شما» خوش آمدید.\n\n` +
+          `از منوی زیر می‌توانید محصولات، اطلاعات فروشگاه، راه‌های ارتباطی و سوالات متداول را مشاهده کنید.`,
+        parse_mode: 'HTML',
+        reply_markup: mainReplyKeyboard()
+      });
 
+      break;
+    }
+
+    /**
+     * PRODUCTS
+     */
     case 'products': {
       const text =
-        'برای مشاهده لیست محصولات، عکس‌ها و قیمت‌های به‌روز ' +
-        'می‌توانید عضو کانال‌های ما شوید.';
+        `📦 <b>مشاهده محصولات</b>\n\n` +
+        `لیست محصولات و قیمت‌های به‌روز فروشگاه در کانال‌های رسمی ما در ایتا و روبیکا قرار می‌گیرد.\n\n` +
+        `برای مشاهده محصولات، عکس‌ها و قیمت‌های فعلی، کانال موردنظر خود را انتخاب کنید:`;
 
       await callApi(token, 'sendMessage', {
         chat_id: chatId,
-        text: text,
+        text,
+        parse_mode: 'HTML',
         reply_markup: productsKeyboard(CONFIG)
       });
 
       break;
     }
 
+    /**
+     * TRUST
+     */
+    case 'trust': {
+      const text =
+        `🛡️ <b>اعتماد و اعتبار فروشگاه</b>\n\n` +
+        `فروشگاه شوینده بهداشتی «شما» دارای وب‌سایت رسمی است و اطلاعات و اعتبار فروشگاه را می‌توانید از طریق لینک‌های رسمی زیر بررسی کنید.\n\n` +
+        `همچنین فروشگاه ما به‌صورت حضوری فعالیت دارد و امکان مراجعه حضوری و خرید از فروشگاه وجود دارد.\n\n` +
+        `📍 <b>آدرس فروشگاه:</b>\n` +
+        `${CONFIG.address}\n\n` +
+        `برای بررسی وب‌سایت و نماد اعتماد الکترونیکی، گزینه موردنظر را انتخاب کنید:`;
+
+      await callApi(token, 'sendMessage', {
+        chat_id: chatId,
+        text,
+        parse_mode: 'HTML',
+        reply_markup: trustKeyboard(CONFIG)
+      });
+
+      break;
+    }
+
+    /**
+     * GUIDE
+     */
     case 'guide': {
       const text =
         `📝 <b>راهنمای ثبت سفارش</b>\n\n` +
-        `ابتدا محصولات و قیمت‌های <b>به‌روز</b> را از ` +
-        `<b>کانال‌های ما</b> مشاهده کنید.\n` +
-        `پس از انتخاب کالا، برای ثبت سفارش از طریق ` +
-        `<b>راه‌های ارتباطی</b> با ما تماس بگیرید.\n` +
-        `با افتخار پاسخگوی شما هستیم.`;
+        `برای ثبت سفارش یا دریافت اطلاعات درباره محصولات، از طریق آیدی پشتیبانی با ما در ارتباط باشید.\n\n` +
+        `📞 <b>آیدی پشتیبانی و ثبت سفارش:</b>\n` +
+        `${CONFIG.supportId}`;
 
       await callApi(token, 'sendMessage', {
         chat_id: chatId,
-        text: text,
+        text,
         parse_mode: 'HTML',
-        reply_markup: guideKeyboard(CONFIG)
+        reply_markup: guideKeyboard()
       });
 
       break;
     }
 
+    /**
+     * CONTACT
+     */
     case 'contact': {
       const text =
-        '☎️ راه‌های ارتباطی\n\n' +
-        'یکی از گزینه‌های زیر را انتخاب کنید:';
+        `☎️ <b>راه‌های ارتباطی</b>\n\n` +
+        `برای ارتباط با فروشگاه می‌توانید از گزینه‌های زیر استفاده کنید.`;
 
       await callApi(token, 'sendMessage', {
         chat_id: chatId,
-        text: text,
+        text,
+        parse_mode: 'HTML',
         reply_markup: contactKeyboard()
       });
 
       break;
     }
 
+    /**
+     * ADDRESS
+     */
     case 'address': {
       const text =
-        `📍 آدرس فروشگاه\n\n` +
-        `آدرس فروشگاه:\n${CONFIG.address}\n\n` +
-        `برای مسیریابی یکی از گزینه‌های زیر را انتخاب کنید:`;
+        `📍 <b>آدرس فروشگاه</b>\n\n` +
+        `${CONFIG.address}\n\n` +
+        `برای مسیریابی، یکی از گزینه‌های زیر را انتخاب کنید:`;
 
       await callApi(token, 'sendMessage', {
         chat_id: chatId,
-        text: text,
+        text,
+        parse_mode: 'HTML',
         reply_markup: addressKeyboard(CONFIG)
       });
 
       break;
     }
 
+    /**
+     * PHONE
+     */
     case 'phone': {
       const text =
-        `📞 تماس و پشتیبانی\n\n` +
-        `شماره تماس:\n${CONFIG.phone}\n\n` +
-        `آیدی پشتیبانی:\n${CONFIG.supportId}`;
+        `☎️ <b>شماره تماس فروشگاه</b>\n\n` +
+        `${CONFIG.phone}`;
 
       await callApi(token, 'sendMessage', {
         chat_id: chatId,
-        text: text,
+        text,
+        parse_mode: 'HTML',
         reply_markup: phoneKeyboard()
       });
 
       break;
     }
 
-    case 'about': {
-      await callApi(token, 'sendMessage', {
-        chat_id: chatId,
-        text: CONFIG.aboutText,
-        parse_mode: 'HTML'
-      });
-
-      break;
-    }
-
-    case 'faq_list': {
+    /**
+     * FAQ
+     */
+    case 'faq': {
       const text =
-        '❓ سوالات متداول\n\n' +
-        'لطفاً سوال خود را انتخاب کنید:';
+        `❓ <b>سوالات متداول</b>\n\n` +
+        `موضوع موردنظر خود را انتخاب کنید:`;
 
       await callApi(token, 'sendMessage', {
         chat_id: chatId,
-        text: text,
-        reply_markup: faqListKeyboard(CONFIG.faq)
+        text,
+        parse_mode: 'HTML',
+        reply_markup: faqListKeyboard(CONFIG)
       });
 
       break;
     }
 
-    default:
-      await sendMainMenu(chatId, token);
+    default: {
+      await sendState(env, token, chatId, userId, 'main');
+    }
   }
 }
 
-// ==============================================
-// ادیت پیام بر اساس State
-// ==============================================
-async function editState(chatId, messageId, state, token) {
+/**
+ * Edit current callback message
+ */
+async function editState(
+  env,
+  token,
+  chatId,
+  messageId,
+  userId,
+  state
+) {
+  await replaceState(env, userId, state);
+
+  let text = '';
+  let reply_markup = undefined;
+
   switch (state) {
+    case 'main': {
+      text =
+        `🧼 <b>${CONFIG.shopName}</b>\n\n` +
+        `از منوی زیر می‌توانید بخش موردنظر خود را انتخاب کنید.`;
+
+      reply_markup = mainReplyKeyboard();
+
+      break;
+    }
+
     case 'contact': {
-      await callApi(token, 'editMessageText', {
-        chat_id: chatId,
-        message_id: messageId,
-        text:
-          '☎️ راه‌های ارتباطی\n\n' +
-          'یکی از گزینه‌های زیر را انتخاب کنید:',
-        reply_markup: contactKeyboard()
-      });
+      text =
+        `☎️ <b>راه‌های ارتباطی</b>\n\n` +
+        `برای ارتباط با فروشگاه می‌توانید از گزینه‌های زیر استفاده کنید.`;
+
+      reply_markup = contactKeyboard();
 
       break;
     }
 
     case 'address': {
-      const text =
-        `📍 آدرس فروشگاه\n\n` +
-        `آدرس فروشگاه:\n${CONFIG.address}\n\n` +
-        `برای مسیریابی یکی از گزینه‌های زیر را انتخاب کنید:`;
+      text =
+        `📍 <b>آدرس فروشگاه</b>\n\n` +
+        `${CONFIG.address}\n\n` +
+        `برای مسیریابی، یکی از گزینه‌های زیر را انتخاب کنید:`;
 
-      await callApi(token, 'editMessageText', {
-        chat_id: chatId,
-        message_id: messageId,
-        text: text,
-        reply_markup: addressKeyboard(CONFIG)
-      });
+      reply_markup = addressKeyboard(CONFIG);
 
       break;
     }
 
     case 'phone': {
-      const text =
-        `📞 تماس و پشتیبانی\n\n` +
-        `شماره تماس:\n${CONFIG.phone}\n\n` +
-        `آیدی پشتیبانی:\n${CONFIG.supportId}`;
+      text =
+        `☎️ <b>شماره تماس فروشگاه</b>\n\n` +
+        `${CONFIG.phone}`;
 
-      await callApi(token, 'editMessageText', {
-        chat_id: chatId,
-        message_id: messageId,
-        text: text,
-        reply_markup: phoneKeyboard()
-      });
+      reply_markup = phoneKeyboard();
 
       break;
     }
 
-    case 'faq_list': {
-      await callApi(token, 'editMessageText', {
-        chat_id: chatId,
-        message_id: messageId,
-        text:
-          '❓ سوالات متداول\n\n' +
-          'لطفاً سوال خود را انتخاب کنید:',
-        reply_markup: faqListKeyboard(CONFIG.faq)
-      });
+    case 'faq': {
+      text =
+        `❓ <b>سوالات متداول</b>\n\n` +
+        `موضوع موردنظر خود را انتخاب کنید:`;
+
+      reply_markup = faqListKeyboard(CONFIG);
 
       break;
+    }
+
+    default: {
+      return;
     }
   }
+
+  await callApi(token, 'editMessageText', {
+    chat_id: chatId,
+    message_id: messageId,
+    text,
+    parse_mode: 'HTML',
+    reply_markup
+  });
 }
 
-// ==============================================
-// هندلر پیام‌های کاربر عادی
-// ==============================================
-export async function handleMessage(message, token, env) {
+/**
+ * Handle normal messages
+ */
+export async function handleMessage(env, update) {
+  const token = getToken(env);
+
+  const message = update.message;
+
+  if (!message) {
+    return;
+  }
+
   const chatId = message.chat.id;
-  const text = message.text || '';
+  const userId = message.from?.id;
+
+  if (!userId) {
+    return;
+  }
 
   await saveUserToDB(env, message.from);
 
-  if (text === '/start') {
-    await resetSession(chatId, env);
-    await sendMainMenu(chatId, token);
+  const text = message.text?.trim();
+
+  if (!text) {
     return;
   }
 
   switch (text) {
-    case '🏠 منوی اصلی':
-      await resetSession(chatId, env);
-      await sendMainMenu(chatId, token);
-      break;
-
-    case '📦 دریافت لیست محصولات':
-      await pushState(chatId, 'products', env);
-      await sendState(chatId, 'products', token);
-      break;
-
-    case '☎️ راه‌های ارتباطی':
-      await pushState(chatId, 'contact', env);
-      await sendState(chatId, 'contact', token);
-      break;
-
-    case '📝 راهنمای ثبت سفارش':
-      await pushState(chatId, 'guide', env);
-      await sendState(chatId, 'guide', token);
-      break;
-
-    case '🏪 درباره ما':
-      await pushState(chatId, 'about', env);
-      await sendState(chatId, 'about', token);
-      break;
-
-    case '❓ سوالات متداول':
-      await pushState(chatId, 'faq_list', env);
-      await sendState(chatId, 'faq_list', token);
-      break;
-
-    case '🔙 بازگشت': {
-      const previousState = await popState(chatId, env);
-      await sendState(chatId, previousState, token);
+    case '/start':
+    case 'شروع': {
+      await clearState(env, userId);
+      await sendState(env, token, chatId, userId, 'main');
       break;
     }
 
-    default:
-      await callApi(token, 'sendMessage', {
-        chat_id: chatId,
-        text:
-          'دستور نامعتبر. لطفاً از دکمه‌های منو استفاده کنید یا /start را بزنید.'
-      });
+    case '📦 مشاهده محصولات': {
+      await pushState(env, userId, 'products');
+      await sendState(env, token, chatId, userId, 'products');
+      break;
+    }
 
-      await sendMainMenu(chatId, token);
+    case '🛡️ اعتماد و اعتبار': {
+      await pushState(env, userId, 'trust');
+      await sendState(env, token, chatId, userId, 'trust');
+      break;
+    }
+
+    case '☎️ راه‌های ارتباطی': {
+      await pushState(env, userId, 'contact');
+      await sendState(env, token, chatId, userId, 'contact');
+      break;
+    }
+
+    case '📝 راهنمای ثبت سفارش': {
+      await pushState(env, userId, 'guide');
+      await sendState(env, token, chatId, userId, 'guide');
+      break;
+    }
+
+    case '❓ سوالات متداول': {
+      await pushState(env, userId, 'faq');
+      await sendState(env, token, chatId, userId, 'faq');
+      break;
+    }
+
+    case '🏪 درباره ما': {
+      await pushState(env, userId, 'about');
+      await sendState(env, token, chatId, userId, 'about');
+      break;
+    }
+
+    default: {
+      await sendState(env, token, chatId, userId, 'main');
+      break;
+    }
   }
 }
 
-// ==============================================
-// هندلر دکمه‌های شیشه‌ای کاربر عادی
-// ==============================================
-export async function handleCallback(callbackQuery, token, env) {
-  const chatId = callbackQuery.message.chat.id;
-  const messageId = callbackQuery.message.message_id;
-  const data = callbackQuery.data;
+/**
+ * Handle inline callbacks
+ */
+export async function handleCallback(env, update) {
+  const token = getToken(env);
+
+  const callback = update.callback_query;
+
+  if (!callback) {
+    return;
+  }
+
+  const chatId = callback.message?.chat?.id;
+  const messageId = callback.message?.message_id;
+  const userId = callback.from?.id;
+  const data = callback.data;
+
+  if (!chatId || !messageId || !userId || !data) {
+    return;
+  }
 
   await callApi(token, 'answerCallbackQuery', {
-    callback_query_id: callbackQuery.id
+    callback_query_id: callback.id
   });
 
-  try {
-    if (data === 'contact') {
-      await pushState(chatId, 'contact', env);
-      await editState(chatId, messageId, 'contact', token);
-    }
+  /**
+   * MAIN
+   */
+  if (data === 'main') {
+    await clearState(env, userId);
 
-    else if (data === 'address') {
-      await pushState(chatId, 'address', env);
-      await editState(chatId, messageId, 'address', token);
-    }
+    await editState(
+      env,
+      token,
+      chatId,
+      messageId,
+      userId,
+      'main'
+    );
 
-    else if (data === 'phone') {
-      await pushState(chatId, 'phone', env);
-      await editState(chatId, messageId, 'phone', token);
-    }
+    return;
+  }
 
-    else if (data === 'main_menu') {
-      await resetSession(chatId, env);
-      await sendMainMenu(chatId, token);
+  /**
+   * CONTACT
+   */
+  if (data === 'contact') {
+    await editState(
+      env,
+      token,
+      chatId,
+      messageId,
+      userId,
+      'contact'
+    );
 
-      try {
-        await callApi(token, 'deleteMessage', {
-          chat_id: chatId,
-          message_id: messageId
-        });
-      } catch (e) {}
-    }
+    return;
+  }
 
-    else if (data.startsWith('faq:q:')) {
-      const index = parseInt(data.split(':')[2], 10);
+  /**
+   * ADDRESS
+   */
+  if (data === 'address') {
+    await editState(
+      env,
+      token,
+      chatId,
+      messageId,
+      userId,
+      'address'
+    );
+
+    return;
+  }
+
+  /**
+   * PHONE
+   */
+  if (data === 'phone') {
+    await editState(
+      env,
+      token,
+      chatId,
+      messageId,
+      userId,
+      'phone'
+    );
+
+    return;
+  }
+
+  /**
+   * FAQ
+   */
+  if (data === 'faq') {
+    await editState(
+      env,
+      token,
+      chatId,
+      messageId,
+      userId,
+      'faq'
+    );
+
+    return;
+  }
+
+  /**
+   * FAQ item
+   */
+  if (data.startsWith('faq_')) {
+    const index = Number(data.replace('faq_', ''));
+
+    if (
+      Number.isInteger(index) &&
+      index >= 0 &&
+      index < CONFIG.faq.length
+    ) {
+      await replaceState(env, userId, `faq_${index}`);
+
       const item = CONFIG.faq[index];
-
-      if (!item) return;
-
-      let text =
-        `❓ ${item.q}\n\n` +
-        `${item.a}`;
-
-      let inlineKeyboard;
-
-      if (index === 2) {
-        text =
-          `❓ ${item.q}\n\n` +
-          `${item.a}\n\n` +
-          `📞 شماره تماس:\n${CONFIG.phone}\n\n` +
-          `🆔 آیدی پشتیبانی:\n${CONFIG.supportId}`;
-
-        inlineKeyboard = faqContactKeyboard();
-      } else {
-        inlineKeyboard = faqDetailKeyboard();
-      }
 
       await callApi(token, 'editMessageText', {
         chat_id: chatId,
         message_id: messageId,
-        text: text,
-        reply_markup: inlineKeyboard
+        text:
+          `❓ <b>${item.q}</b>\n\n` +
+          `${item.a}`,
+        parse_mode: 'HTML',
+        reply_markup: faqDetailKeyboard()
       });
     }
 
-    else if (data === 'faq_list') {
-      await pushState(chatId, 'faq_list', env);
-      await editState(chatId, messageId, 'faq_list', token);
-    }
+    return;
+  }
 
-  } catch (error) {
-    console.error('Callback error:', error);
-
-    await callApi(token, 'sendMessage', {
-      chat_id: chatId,
-      text:
-        'متأسفانه خطایی رخ داد. لطفاً دوباره تلاش کنید یا /start را بزنید.'
+  /**
+   * CONTACT PHONE
+   */
+  if (data === 'contact_phone') {
+    await callApi(token, 'answerCallbackQuery', {
+      callback_query_id: callback.id,
+      url: `tel:${CONFIG.phone}`
     });
+
+    return;
   }
 }
+```

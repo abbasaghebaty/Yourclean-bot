@@ -30,6 +30,12 @@ export function mainReplyKeyboard() {
           text: '❓ سوالات متداول',
           style: 'primary'
         }
+      ],
+      [
+        {
+          text: '⚠️ صندوق انتقادات و پیشنهادات',
+          style: 'danger'
+        }
       ]
     ],
 
@@ -163,6 +169,21 @@ export function phoneKeyboard() {
           text: '🔙',
           callback_data: 'contact',
           style: 'danger'
+        }
+      ]
+    ]
+  };
+}
+
+
+export function feedbackKeyboard() {
+  return {
+    inline_keyboard: [
+      [
+        {
+          text: '📝 ثبت انتقاد یا پیشنهاد',
+          url: 'https://t.me/XBCHATBot?start=sec-icebgchgcg',
+          style: 'primary'
         }
       ]
     ]

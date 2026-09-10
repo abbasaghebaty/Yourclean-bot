@@ -48,8 +48,11 @@ export const texts = {
 
 
   phone: (config) =>
-    `☎️ <b>شماره تماس فروشگاه</b>\n\n` +
-    `${config.phone}`,
+    `☎️ <b>راه‌های ارتباطی</b>\n\n` +
+    `تلفن فروشگاه:\n` +
+    `<b>${config.phone}</b>\n\n` +
+    `پشتیبانی و پاسخ‌گویی:\n` +
+    `<b>${config.supportId}</b>`,
 
 
   feedback: () =>

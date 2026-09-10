@@ -224,13 +224,6 @@ export function faqDetailKeyboard() {
     inline_keyboard: [
       [
         {
-          text: '☎️ ارتباط با پشتیبانی',
-          callback_data: 'contact',
-          style: 'primary'
-        }
-      ],
-      [
-        {
           text: '🔙 به سوالات',
           callback_data: 'faq',
           style: 'danger'

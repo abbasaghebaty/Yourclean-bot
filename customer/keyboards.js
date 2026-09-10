@@ -107,7 +107,7 @@ export function guideKeyboard() {
       ],
       [
         {
-          text: '🔙 بازگشت',
+          text: '🔙',
           callback_data: 'main',
           style: 'danger'
         }
@@ -166,7 +166,7 @@ export function addressKeyboard(config) {
 
   rows.push([
     {
-      text: '🔙 بازگشت',
+      text: '🔙',
       callback_data: 'contact',
       style: 'danger'
     }
@@ -183,7 +183,7 @@ export function phoneKeyboard() {
     inline_keyboard: [
       [
         {
-          text: '🔙 بازگشت',
+          text: '🔙',
           callback_data: 'contact',
           style: 'danger'
         }
@@ -224,7 +224,7 @@ export function faqDetailKeyboard() {
       ],
       [
         {
-          text: '🔙 بازگشت به سوالات',
+          text: '🔙 به سوالات',
           callback_data: 'faq',
           style: 'danger'
         }

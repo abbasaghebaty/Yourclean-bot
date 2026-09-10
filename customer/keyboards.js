@@ -43,7 +43,7 @@ export function productsKeyboard(config) {
 
   if (isValidUrl(config.eitaaUrl)) {
     row.push({
-      text: '📱 ایتا',
+      text: 'ایتا',
       url: config.eitaaUrl,
       style: 'primary'
     });
@@ -51,7 +51,7 @@ export function productsKeyboard(config) {
 
   if (isValidUrl(config.rubikaUrl)) {
     row.push({
-      text: '📱 روبیکا',
+      text: 'روبیکا',
       url: config.rubikaUrl,
       style: 'primary'
     });

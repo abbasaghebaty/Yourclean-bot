@@ -1,20 +1,26 @@
+```js
 export const CONFIG = {
   shopName: 'شما شاپ',
 
-  address: 'مشهد ، بین هنور ۲۰ و ۲۲',
+  address: 'مشهد، بین هنرور ۲۰ و ۲۲',
 
   phone: '09154819081',
 
   supportId: '@shoma_shop_sup',
 
-  eitaaUrl: 'لینک فعلی ایتا',
+  // Official channels
+  eitaaUrl: 'https://eitaa.com/shoma_shop',
+  rubikaUrl: 'https://rubika.ir/shoma_shop',
 
-  rubikaUrl: 'لینک فعلی روبیکا',
+  // Official website
+  websiteUrl: 'https://shoma-shop.ir',
 
-  instagramUrl: 'لینک فعلی اینستاگرام',
+  // Enamad
+  enamadUrl:
+    'https://trustseal.enamad.ir/?id=765293&code=GjlFQ6vNGH0EM02TrdYiQWF7Va7pZxOd',
 
+  // Navigation
   neshanUrl: 'https://nshn.ir/357b1MaUNJjDV8',
-
   googleMapsUrl: 'https://maps.app.goo.gl/CpzYyvSusBmFViwi7',
 
   aboutText: '',
@@ -38,3 +44,4 @@ export const CONFIG = {
     // سایر سوالات FAQ فعلی پروژه‌ات را اینجا نگه دار.
   ]
 };
+```
